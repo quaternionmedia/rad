@@ -87,8 +87,9 @@ has reviewed the whole of it, and a human has driven it on real hardware.
 sufficient, and it is sufficient because the claim is correspondingly narrow.
 
 **Discharged by:**
-- `npm run gate` green and deterministic — **met**: 259 tests, no skips, no
-  retries, no flakes.
+- `npm run gate` green and deterministic — **met**, and re-established on every
+  run rather than quoted: `scripts/check-gate.mjs` prints the count and fails
+  on any skip, rerun or flake.
 - `conformance/vectors.json` replayed against the page core, and the inline
   block in sync with it — **met**.
 - Human review of the change set — **outstanding**, and it is the substance of
@@ -116,14 +117,24 @@ this project exists to produce.
 **Proving consumers:** **apothecary** and **benchmark**.
 
 **Discharged by:**
-- An **integration standard** that does not yet exist and is the real
-  deliverable of this milestone: how a host mounts `rad`, supplies a
-  `MenuContext`, receives `Intent`s, and routes them through its own state
-  layer without the menu touching the scene. The contract already forbids the
-  menu mutating anything; it says nothing about the seam a host attaches to.
+- An **integration standard**, now drafted as *rad host integration standard*:
+  how a host mounts `rad`, supplies a `MenuContext`, receives `Intent`s, and
+  routes them through its own state layer without the menu touching the scene.
+  The contract already forbids the menu mutating anything; it said nothing
+  about the seam a host attaches to.
+  Its own conformance evidence is `tests/integration.spec.mjs`, which drives a
+  synthetic host — its own scene, reducer, vocabulary and camera — entirely
+  through the public surface, and asserts the host's scene is byte-identical
+  across a whole gesture. **A synthetic host is not a consumer**: it proves the
+  seam is usable by something that is not the reference page, and it cannot
+  prove the seam is *well shaped*, because the same person designed both sides.
 - That standard implemented in **both** hosts. Two rather than one because the
   org's own second-data-point rule applies: one integration is an anecdote and
   cannot distinguish "the standard works" from "the standard fits apothecary".
+- The four items §6 of that standard lists as unsettled either decided or still
+  honestly unneeded — synchronous `resolve`, capabilities, concurrent sessions,
+  and renderer replacement. A host hitting one of them is the cheapest
+  information this milestone can produce.
 - Each host replaying `conformance/vectors.json` in its own runner, pinning the
   vector version it claims.
 - At least one divergence found by a host and captured as a **new vector**
@@ -227,10 +238,10 @@ there is none. `1.0.0` is not scheduled and is not this record's business.
 - The version line becomes a statement about evidence rather than about effort,
   and the gap between "finished" and "proven" becomes visible instead of
   arguable.
-- Two milestones create work that does not exist yet: the integration standard
-  (`v0.0.2`) and the core extraction the import-boundary lint needs
-  (`v0.0.3`). Naming them here is the point — both were implicit and neither
-  was scheduled.
+- Two milestones created work that did not exist. The integration standard is
+  now drafted and proven against a synthetic host; the core extraction the
+  import-boundary lint needs is still a pending decision. Naming them was the
+  point — both were implicit and neither was scheduled.
 - `v0.0.4` reopens three obligations the adoption record currently answers with
   "none". Accepted, and written down before the work rather than discovered
   during it.

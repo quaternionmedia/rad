@@ -8,7 +8,7 @@
   "scripts": {
     "pretest": "node -e \"require('fs').rmSync('docs/.staging',{recursive:true,force:true})\"",
     "gate": "playwright test --grep-invert @timing --fail-on-flaky-tests && node scripts/check-gate.mjs",
-    "measure": "playwright test --grep @timing --workers=1 --output=test-results-timing",
+    "measure": "playwright test --grep @timing --workers=1 --output=test-results-timing --reporter=line",
     "test": "npm run gate && npm run measure",
     "test:all": "playwright test",
     "test:ui": "playwright test --ui",

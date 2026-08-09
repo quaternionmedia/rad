@@ -112,6 +112,19 @@ If a gate test starts skipping or flaking, fix it or move it to `measure`.
 Do not add a retry — `retries` is 0 by construction and §7 requires CI to fail
 a release build that reports a rerun.
 
+### The public seam
+
+`window.rad` is what a host integrates against, and it is the whole of it — a
+frozen object holding the platform-free core plus `createSession`. Anything not
+on it is private, and a host reaching past it is relying on a coincidence. The
+shape is specified in `adr/DRAFT-rad-host-integration-standard.md` and proven by
+`tests/integration.spec.mjs`, which drives a synthetic host with its own scene,
+reducer, vocabulary and camera.
+
+Adding to that surface is a decision, not a convenience: it is the thing the two
+`v0.0.2` consumers will pin against. Anything with a DOM reference in it fails
+`tests/integration.spec.mjs` outright.
+
 ### Three rules specific to this repository
 
 1. **`conformance/vectors.json` is the source of truth for the core's

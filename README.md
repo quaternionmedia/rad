@@ -52,7 +52,7 @@ rather than reported.
 |---|---|---|---|
 | IPA, release-select gesture | 1 | 1 verb | 1 |
 | IPA, chord verbs (worst case) | 1 | 32 verbs | 1 |
-| TTC p95, chord | 1.20 ms | 33 | ≤ 16 ms |
+| TTC p95, chord | 1.10 ms | 33 | ≤ 16 ms |
 | Grid jitter p95, quantized | 0.00 ms | 24 | ≤ 1 ms |
 
 ## Speed: three axes, MIDI-drivable
