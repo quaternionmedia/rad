@@ -505,6 +505,33 @@ const MAX_ITEMS = 8;                 // contract §1; the resolver enforces it
 function rCancel(g = GEOM) { return g.r1 * g.cancelScale; }
 function inBand(r, g = GEOM) { return r > g.r0 && r <= rCancel(g); }
 
+/* Fitting the ring to a viewport. Contract §2: clamp by shifting the centre
+ * inward, never by shrinking below minimums. Two cases it did not cover:
+ *
+ *  - a viewport too small for the ring at its natural radius. Shrinking r1
+ *    *toward* the stated band minimum (r0 + 56, the radius at which a wedge at
+ *    N=8 still clears a 44-unit target) is not shrinking below a minimum, and
+ *    it is strictly better than overflowing.
+ *  - a viewport too small even for that. A naive clamp INVERTS its own bounds
+ *    here and returns the upper one, which pushes the ring off the opposite
+ *    edge — measured: a 320x260 viewport put the centre at y=88 with r1=108,
+ *    i.e. 20 units above the top edge. Centring is the only choice that keeps
+ *    the overflow symmetric, so no wedge is less reachable than another.
+ */
+const RING = { bandMin: 56, margin: 8, topInset: 64, bottomInset: 40 };
+function fitRing(vw, vh, g = GEOM) {
+  const avail = Math.min(vw, vh) / 2 - RING.margin;
+  return { r0: g.r0, r1: Math.max(g.r0 + RING.bandMin, Math.min(g.r1, avail)) };
+}
+function clampRingCentre(x, y, vw, vh, r1) {
+  const m = r1 + 24;
+  const axis = (v, lo, hi, extent) => (lo > hi ? extent / 2 : Math.min(Math.max(v, lo), hi));
+  return {
+    x: axis(x, m, vw - m, vw),
+    y: axis(y, Math.max(m, RING.topInset), vh - m - RING.bottomInset, vh),
+  };
+}
+
 function normDeg(d) { return ((d % 360) + 360) % 360; }
 function angleToIndex(thetaDeg, n, startDeg = GEOM.startDeg) {
   const rel = normDeg(thetaDeg - startDeg);
@@ -568,9 +595,14 @@ function assertRing(items, where) {
   if (items.length > MAX_ITEMS)
     throw new RangeError(`rad: ${where} ring has ${items.length} items, contract §1 caps a ring at ${MAX_ITEMS} — group into a submenu`);
 }
-function createMachine(spec) {
+/* The machine carries the geometry it was opened with. Reading a module global
+ * made the committing band a property of the page rather than of the menu, so
+ * a ring fitted to a small viewport would have been drawn at one radius and
+ * judged at another. */
+function createMachine(spec, geom = GEOM) {
   assertRing(spec.items, spec.title || 'root');
   return {
+    geom,
     status: 'closed',          // closed | pending | open
     mode: null,                // 'tracking' (release-select) | 'idle' (tap-select)
     stack: [spec],             // submenu stack; top = current MenuSpec
@@ -596,7 +628,8 @@ function step(s, ev) {
     const it = i == null ? null : items[i];
     fx.push({ t: 'highlight', i, id: it ? it.id : null, label: it ? (it.label ?? '') : '' });
   };
-  const beyond = (r) => r > rCancel();
+  const g = s.geom ?? GEOM;
+  const beyond = (r) => r > rCancel(g);
 
   switch (ev.type) {
     case 'open':                     // explicit open -> tap-select mode
@@ -606,7 +639,7 @@ function step(s, ev) {
     case 'down':
       if (s.status === 'closed') { s.status = 'pending'; break; }
       if (s.status === 'open' && s.mode === 'idle') {
-        if (ev.r <= GEOM.r0) { s.pressIndex = 'hub'; break; }   // latch the back/cancel affordance
+        if (ev.r <= g.r0) { s.pressIndex = 'hub'; break; }      // latch the back/cancel affordance
         if (beyond(ev.r)) { close(s, fx, true); break; }
         s.pressIndex = angleToIndex(ev.thetaDeg, n); setHl(s.pressIndex);
       }
@@ -622,11 +655,11 @@ function step(s, ev) {
       // highlight one: a highlight that cannot commit is the interface lying
       // about its own next state, and it fires a haptic for a non-event.
       if (s.pressIndex === 'hub') break;
-      if (inBand(ev.r)) {
+      if (inBand(ev.r, g)) {
         const i = angleToIndex(ev.thetaDeg, n);
         setHl(i);
         // drag-through submenu entry (release-select only)
-        if (s.mode === 'tracking' && ev.r > GEOM.r1 + 12 && items[i] && items[i].children) {
+        if (s.mode === 'tracking' && ev.r > g.r1 + 12 && items[i] && items[i].children) {
           enterSub(s, fx, items[i]);
         }
       } else setHl(null);            // inside the dead zone, or beyond r_cancel
@@ -636,11 +669,11 @@ function step(s, ev) {
       if (s.status === 'pending') { close(s, fx, true); break; }   // short press: never opened
       if (s.status !== 'open') break;
       if (s.mode === 'tracking') {
-        if (inBand(ev.r) && s.highlight != null) commit(s, fx, items[s.highlight]);
+        if (inBand(ev.r, g) && s.highlight != null) commit(s, fx, items[s.highlight]);
         else close(s, fx, true);                                   // dead zone or beyond r_cancel
       } else { // idle / tap-select
         if (s.pressIndex === 'hub') { s.pressIndex = null; back(s, fx); break; }
-        if (s.pressIndex != null && inBand(ev.r) && angleToIndex(ev.thetaDeg, n) === s.pressIndex) {
+        if (s.pressIndex != null && inBand(ev.r, g) && angleToIndex(ev.thetaDeg, n) === s.pressIndex) {
           commit(s, fx, items[s.pressIndex]);
         }
         s.pressIndex = null;
@@ -685,7 +718,7 @@ function step(s, ev) {
  * conformance/vectors.json. Do not edit by hand; run `npm run sync:vectors`.
  * The JSON file is the governed artifact, this is a build product of it. */
 const VECTORS = {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "geometry": {
     "startDeg": -90,
     "clockwise": true,
@@ -694,14 +727,18 @@ const VECTORS = {
     "longPressMs": 350,
     "slop": 10,
     "cancelScale": 1.35,
-    "maxItems": 8
+    "maxItems": 8,
+    "bandMin": 56,
+    "margin": 8,
+    "topInset": 64,
+    "bottomInset": 40
   },
   "time": {
     "ppqn": 24,
     "chordGapMs": 30,
     "burstSplitMs": 250
   },
-  "notes": "Traces are polar, relative to menu center. r in density-independent units. thetaDeg uses screen convention where -90 is up. 'expectHighlights' is the edge-triggered sequence of item indices (null = none); 'expectLabels' is the label each highlight effect carried, which must be resolvable without consulting live state. v0.3.0 adds: the outward cancel bound r_cancel = cancelScale * r1, identical in both commit styles; hub-latch highlight suppression; the ring ceiling; prefix-freeness of a chord vocabulary; and the three tempo axes (bpm, div, aps) with their MIDI CC mappings. v0.2.0 added pure suites: quant (quantizeTime), tempo (estimateBpm over 24ppqn ticks, median period), chord (classifyBurst), split (splitBursts).",
+  "notes": "Traces are polar, relative to menu center. r in density-independent units. thetaDeg uses screen convention where -90 is up. 'expectHighlights' is the edge-triggered sequence of item indices (null = none); 'expectLabels' is the label each highlight effect carried, which must be resolvable without consulting live state. v0.3.0 adds: the outward cancel bound r_cancel = cancelScale * r1, identical in both commit styles; hub-latch highlight suppression; the ring ceiling; prefix-freeness of a chord vocabulary; and the three tempo axes (bpm, div, aps) with their MIDI CC mappings. v0.2.0 added pure suites: quant (quantizeTime), tempo (estimateBpm over 24ppqn ticks, median period), chord (classifyBurst), split (splitBursts). v0.4.0 adds the ring-fit suite: fitRing shrinks r1 toward the band minimum before overflowing a viewport that cannot contain it, and clampRingCentre centres rather than clamping when the viewport is smaller than the ring, because a naive clamp inverts its own bounds and pushes the ring off the opposite edge. Cases may carry a `geom` override; the state machine reads geometry from its own state rather than a module global.",
   "cases": [
     {
       "name": "angle-to-index basics, N=4",
@@ -1711,6 +1748,212 @@ const VECTORS = {
           "expectMs": 2000
         }
       ]
+    },
+    {
+      "name": "fitRing keeps the natural radius when the viewport allows",
+      "fit": [
+        {
+          "vw": 390,
+          "vh": 900,
+          "expectR1": 108
+        },
+        {
+          "vw": 1280,
+          "vh": 860,
+          "expectR1": 108
+        },
+        {
+          "vw": 240,
+          "vh": 900,
+          "expectR1": 108
+        },
+        {
+          "vw": 232,
+          "vh": 900,
+          "expectR1": 108
+        }
+      ]
+    },
+    {
+      "name": "fitRing shrinks r1 toward the band minimum, never past it",
+      "fit": [
+        {
+          "vw": 200,
+          "vh": 900,
+          "expectR1": 92
+        },
+        {
+          "vw": 180,
+          "vh": 900,
+          "expectR1": 92
+        },
+        {
+          "vw": 900,
+          "vh": 200,
+          "expectR1": 92
+        },
+        {
+          "vw": 60,
+          "vh": 60,
+          "expectR1": 92
+        }
+      ]
+    },
+    {
+      "name": "clampRingCentre shifts the centre inward when the ring fits",
+      "clamp": [
+        {
+          "x": 10,
+          "y": 400,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 132,
+          "expectY": 400
+        },
+        {
+          "x": 380,
+          "y": 400,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 258,
+          "expectY": 400
+        },
+        {
+          "x": 195,
+          "y": 10,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 195,
+          "expectY": 132
+        },
+        {
+          "x": 195,
+          "y": 890,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 195,
+          "expectY": 728
+        },
+        {
+          "x": 195,
+          "y": 400,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 195,
+          "expectY": 400
+        }
+      ]
+    },
+    {
+      "name": "clampRingCentre centres on the axis that cannot fit, and clamps on the one that can",
+      "clamp": [
+        {
+          "x": 160,
+          "y": 130,
+          "vw": 320,
+          "vh": 260,
+          "r1": 92,
+          "expectX": 160,
+          "expectY": 130
+        },
+        {
+          "x": 10,
+          "y": 10,
+          "vw": 320,
+          "vh": 260,
+          "r1": 92,
+          "expectX": 116,
+          "expectY": 130
+        },
+        {
+          "x": 300,
+          "y": 250,
+          "vw": 200,
+          "vh": 200,
+          "r1": 92,
+          "expectX": 100,
+          "expectY": 100
+        }
+      ]
+    },
+    {
+      "name": "the committing band follows the machine's own geometry, not a global",
+      "n": 4,
+      "geom": {
+        "startDeg": -90,
+        "clockwise": true,
+        "r0": 36,
+        "r1": 92,
+        "cancelScale": 1.35,
+        "longPressMs": 350,
+        "slop": 10
+      },
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "down",
+          "r": 120,
+          "thetaDeg": 0
+        },
+        {
+          "t": 160,
+          "type": "up",
+          "r": 120,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [
+        1
+      ],
+      "expect": {
+        "committed": 1,
+        "cancelled": false
+      }
+    },
+    {
+      "name": "a shrunken ring cancels beyond its own r_cancel (124.2), not the default",
+      "n": 4,
+      "geom": {
+        "startDeg": -90,
+        "clockwise": true,
+        "r0": 36,
+        "r1": 92,
+        "cancelScale": 1.35,
+        "longPressMs": 350,
+        "slop": 10
+      },
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "down",
+          "r": 130,
+          "thetaDeg": 0
+        },
+        {
+          "t": 160,
+          "type": "up",
+          "r": 130,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [],
+      "expect": {
+        "committed": null,
+        "cancelled": true
+      }
     }
   ]
 };
@@ -1736,7 +1979,19 @@ function runConformanceWith(V) {
   const results = [];
   for (const c of V.cases) {
     let pass = true, why = '';
-    if (c.ceiling) {
+    if (c.fit) {
+      for (const k of c.fit) {
+        const got = fitRing(k.vw, k.vh).r1;
+        if (Math.abs(got - k.expectR1) > 1e-9) { pass = false; why = `${k.vw}x${k.vh} → r1 ${got}, want ${k.expectR1}`; break; }
+      }
+    } else if (c.clamp) {
+      for (const k of c.clamp) {
+        const got = clampRingCentre(k.x, k.y, k.vw, k.vh, k.r1);
+        if (Math.abs(got.x - k.expectX) > 1e-9 || Math.abs(got.y - k.expectY) > 1e-9) {
+          pass = false; why = `(${k.x},${k.y}) in ${k.vw}x${k.vh} r1=${k.r1} → (${got.x},${got.y}), want (${k.expectX},${k.expectY})`; break;
+        }
+      }
+    } else if (c.ceiling) {
       for (const k of c.ceiling) {
         let threw = false;
         try { createMachine({ items: Array.from({ length: k.n }, (_, i) => ({ id: 'i' + i, label: 'i' + i })) }); }
@@ -1796,7 +2051,7 @@ function runConformanceWith(V) {
       }
     } else {
       const spec = { items: Array.from({ length: c.n }, (_, i) => ({ id: 'i' + i, label: 'i' + i })) };
-      const st = createMachine(spec);
+      const st = createMachine(spec, c.geom ? { ...GEOM, ...c.geom } : GEOM);
       const hl = [], labels = [];
       for (const ev of c.trace) {
         for (const f of step(st, ev)) if (f.t === 'highlight') { hl.push(f.i); if (f.i != null) labels.push(f.label); }
@@ -2229,6 +2484,11 @@ function resolveMenu(ctx) {
     { id: 'color-' + tok, label: tok, swatch: 'swatch-' + tok, action: 'color:' + tok }));
   if (ctx.type === 'node') {
     const n = store.nodes.get(ctx.targetIds[0]);
+    // A context can outlive its target: delete and hide both remove nodes, and
+    // a menu can be opened from a stale id. Falling back to the canvas menu is
+    // better than throwing inside the resolver, which took the whole gesture
+    // down and left the page with no menu and no error the user could see.
+    if (!n) return resolveMenu({ type: 'canvas', targetIds: [], position: ctx.position });
     return { title: n.label, items: [
       { id: 'pin', label: n.pinned ? 'Unpin' : 'Pin', action: 'pin' },
       { id: 'neighbors', label: 'Neighbors', action: 'select-neighbors' },
@@ -2238,6 +2498,8 @@ function resolveMenu(ctx) {
     ] };
   }
   if (ctx.type === 'edge') {
+    if (!store.edges.some((e) => e.id === ctx.targetIds[0]))
+      return resolveMenu({ type: 'canvas', targetIds: [], position: ctx.position });
     return { title: 'edge', items: [
       { id: 'reverse', label: 'Reverse', action: 'reverse' },
       { id: 'label', label: 'Label', action: 'edit-label' },
@@ -2245,7 +2507,9 @@ function resolveMenu(ctx) {
     ] };
   }
   if (ctx.type === 'selection') {
-    return { title: store.selection.size + ' selected', items: [
+    const live = ctx.targetIds.filter((id) => store.nodes.has(id));
+    if (!live.length) return resolveMenu({ type: 'canvas', targetIds: [], position: ctx.position });
+    return { title: live.length + ' selected', items: [
       { id: 'cluster', label: 'Cluster', action: 'cluster' },
       { id: 'spread', label: 'Spread', action: 'spread' },
       { id: 'hide', label: 'Hide', action: 'hide' },
@@ -2330,6 +2594,21 @@ function render() {
   if (hadFocus) {
     const again = gNodes.querySelector(`[data-node="${hadFocus}"]`);
     if (again) again.focus({ preventScroll: true });
+    else {
+      // The focused node was hidden or deleted. Leaving focus on <body> ejects
+      // a keyboard user from the graph silently, with focusNodeId still naming
+      // a node that is not there.
+      const next = gNodes.querySelector('[data-node]');
+      if (next) {
+        focusNodeId = next.getAttribute('data-node');
+        next.setAttribute('tabindex', '0');
+        next.classList.add('kfocus');
+        next.focus({ preventScroll: true });
+        announce(`${focusNodeId}, previous selection is no longer on the canvas`);
+      } else {
+        focusNodeId = null;
+      }
+    }
   }
 }
 
@@ -2338,10 +2617,19 @@ const logEl = document.getElementById('log');
 function logIntent(it) {
   const d = document.createElement('div');
   d.className = 'intent';
-  d.innerHTML = `<b>${it.action}</b> · ${it.context.type}${it.context.targetIds.length ? ' [' + it.context.targetIds.join(',') + ']' : ''}`
+  // Built with DOM APIs rather than innerHTML. Node ids are internal today,
+  // but add-node mints them and any import would make them data — and an id
+  // containing markup produced a real element in this strip, which is a
+  // scripting sink one feature away from being reachable.
+  const verb = document.createElement('b');
+  verb.textContent = it.action;
+  d.appendChild(verb);
+  d.appendChild(document.createTextNode(
+    ' · ' + it.context.type
+    + (it.context.targetIds.length ? ' [' + it.context.targetIds.join(',') + ']' : '')
     + (it.cost != null ? ' · ' + it.cost + '⊙' : '')
     + (it.via === 'chord' ? ' · ⚡' : it.via === 'typed' ? ' · ⌨' : '')
-    + (it.grid ? ` · @b${it.grid.beat}${it.grid.deltaMs >= 0 ? '+' : ''}${it.grid.deltaMs}ms` : '');
+    + (it.grid ? ` · @b${it.grid.beat}${it.grid.deltaMs >= 0 ? '+' : ''}${it.grid.deltaMs}ms` : '')));
   logEl.prepend(d);
   while (logEl.children.length > 12) logEl.lastChild.remove();
 }
@@ -2349,18 +2637,22 @@ function logIntent(it) {
 /* ---------- radial menu view ---------- */
 const menu = { active: null };  // {machine, ctx, cx, cy, group}
 
+/* DOM-facing wrapper over the pure pair, kept so callers do not each read the
+ * viewport. The arithmetic lives in fitRing/clampRingCentre, where vectors can
+ * reach it. */
 function clampCenter(x, y) {
-  const m = GEOM.r1 + 24;
-  return { x: Math.min(Math.max(x, m), VW() - m), y: Math.min(Math.max(y, Math.max(m, 64)), VH() - m - 40) };
+  const { r1 } = fitRing(VW(), VH());
+  return clampRingCentre(x, y, VW(), VH(), r1);
 }
 
 function openMenu(ctx, screenX, screenY, mode) {
   document.getElementById('hint').classList.add('faded');
   closeMenu();
   const spec = resolveMenu(ctx);
-  const { x, y } = clampCenter(screenX, screenY);
-  const machine = createMachine(spec);
-  menu.active = { machine, ctx, cx: x, cy: y, group: null };
+  const geom = { ...GEOM, ...fitRing(VW(), VH()) };
+  const { x, y } = clampRingCentre(screenX, screenY, VW(), VH(), geom.r1);
+  const machine = createMachine(spec, geom);
+  menu.active = { machine, ctx, cx: x, cy: y, geom, group: null };
   if (mode === 'idle') feed({ type: 'open' });
   else { machine.status = 'pending'; feed({ type: 'longpress' }); }
   svg.setAttribute('aria-label', 'Radial menu open: ' + (spec.title || ctx.type));
@@ -2410,13 +2702,14 @@ function drawMenu() {
   const a = menu.active; if (!a) { gMenu.textContent = ''; return; }
   gMenu.textContent = '';
   const items = mItems(a.machine), n = items.length, half = 180 / n;
+  const ring = a.geom ?? GEOM;
   const root = el('g', { class: 'rm-root', role: 'menu', 'aria-label': a.machine.stack[a.machine.stack.length - 1].title || 'menu' });
   items.forEach((item, i) => {
     const c = itemCenterDeg(i, n);
     const g = el('g', { class: 'rm-wedge' + (a.machine.highlight === i ? ' hl' : '') + (item.enabled === false ? ' disabled' : '') + (item.destructive ? ' danger' : ''), role: 'menuitem', 'aria-label': item.label || item.id });
     const grow = a.machine.highlight === i ? 8 : 0;
-    g.appendChild(el('path', { d: arcPath(a.cx, a.cy, GEOM.r0 + 3, GEOM.r1 + grow, c - half + 1.2, c + half - 1.2) }));
-    const rm = (GEOM.r0 + GEOM.r1) / 2 + grow / 2;
+    g.appendChild(el('path', { d: arcPath(a.cx, a.cy, ring.r0 + 3, ring.r1 + grow, c - half + 1.2, c + half - 1.2) }));
+    const rm = (ring.r0 + ring.r1) / 2 + grow / 2;
     const tx = a.cx + rm * Math.cos(c * Math.PI / 180), ty = a.cy + rm * Math.sin(c * Math.PI / 180);
     if (item.swatch) {
       g.appendChild(el('circle', { cx: tx, cy: ty, r: 11, fill: token(item.swatch),
@@ -2427,7 +2720,7 @@ function drawMenu() {
     }
     root.appendChild(g);
   });
-  const hub = el('circle', { class: 'rm-hub', cx: a.cx, cy: a.cy, r: GEOM.r0 - 2 });
+  const hub = el('circle', { class: 'rm-hub', cx: a.cx, cy: a.cy, r: ring.r0 - 2 });
   root.appendChild(hub);
   const hl = el('text', { class: 'rm-hub-label', x: a.cx, y: a.cy, dy: '0.35em' });
   hl.textContent = a.machine.stack.length > 1 ? '←' : (a.machine.stack[0].title || '').slice(0, 9);

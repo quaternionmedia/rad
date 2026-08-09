@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "geometry": {
     "startDeg": -90,
     "clockwise": true,
@@ -8,14 +8,18 @@
     "longPressMs": 350,
     "slop": 10,
     "cancelScale": 1.35,
-    "maxItems": 8
+    "maxItems": 8,
+    "bandMin": 56,
+    "margin": 8,
+    "topInset": 64,
+    "bottomInset": 40
   },
   "time": {
     "ppqn": 24,
     "chordGapMs": 30,
     "burstSplitMs": 250
   },
-  "notes": "Traces are polar, relative to menu center. r in density-independent units. thetaDeg uses screen convention where -90 is up. 'expectHighlights' is the edge-triggered sequence of item indices (null = none); 'expectLabels' is the label each highlight effect carried, which must be resolvable without consulting live state. v0.3.0 adds: the outward cancel bound r_cancel = cancelScale * r1, identical in both commit styles; hub-latch highlight suppression; the ring ceiling; prefix-freeness of a chord vocabulary; and the three tempo axes (bpm, div, aps) with their MIDI CC mappings. v0.2.0 added pure suites: quant (quantizeTime), tempo (estimateBpm over 24ppqn ticks, median period), chord (classifyBurst), split (splitBursts).",
+  "notes": "Traces are polar, relative to menu center. r in density-independent units. thetaDeg uses screen convention where -90 is up. 'expectHighlights' is the edge-triggered sequence of item indices (null = none); 'expectLabels' is the label each highlight effect carried, which must be resolvable without consulting live state. v0.3.0 adds: the outward cancel bound r_cancel = cancelScale * r1, identical in both commit styles; hub-latch highlight suppression; the ring ceiling; prefix-freeness of a chord vocabulary; and the three tempo axes (bpm, div, aps) with their MIDI CC mappings. v0.2.0 added pure suites: quant (quantizeTime), tempo (estimateBpm over 24ppqn ticks, median period), chord (classifyBurst), split (splitBursts). v0.4.0 adds the ring-fit suite: fitRing shrinks r1 toward the band minimum before overflowing a viewport that cannot contain it, and clampRingCentre centres rather than clamping when the viewport is smaller than the ring, because a naive clamp inverts its own bounds and pushes the ring off the opposite edge. Cases may carry a `geom` override; the state machine reads geometry from its own state rather than a module global.",
   "cases": [
     {
       "name": "angle-to-index basics, N=4",
@@ -1025,6 +1029,212 @@
           "expectMs": 2000
         }
       ]
+    },
+    {
+      "name": "fitRing keeps the natural radius when the viewport allows",
+      "fit": [
+        {
+          "vw": 390,
+          "vh": 900,
+          "expectR1": 108
+        },
+        {
+          "vw": 1280,
+          "vh": 860,
+          "expectR1": 108
+        },
+        {
+          "vw": 240,
+          "vh": 900,
+          "expectR1": 108
+        },
+        {
+          "vw": 232,
+          "vh": 900,
+          "expectR1": 108
+        }
+      ]
+    },
+    {
+      "name": "fitRing shrinks r1 toward the band minimum, never past it",
+      "fit": [
+        {
+          "vw": 200,
+          "vh": 900,
+          "expectR1": 92
+        },
+        {
+          "vw": 180,
+          "vh": 900,
+          "expectR1": 92
+        },
+        {
+          "vw": 900,
+          "vh": 200,
+          "expectR1": 92
+        },
+        {
+          "vw": 60,
+          "vh": 60,
+          "expectR1": 92
+        }
+      ]
+    },
+    {
+      "name": "clampRingCentre shifts the centre inward when the ring fits",
+      "clamp": [
+        {
+          "x": 10,
+          "y": 400,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 132,
+          "expectY": 400
+        },
+        {
+          "x": 380,
+          "y": 400,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 258,
+          "expectY": 400
+        },
+        {
+          "x": 195,
+          "y": 10,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 195,
+          "expectY": 132
+        },
+        {
+          "x": 195,
+          "y": 890,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 195,
+          "expectY": 728
+        },
+        {
+          "x": 195,
+          "y": 400,
+          "vw": 390,
+          "vh": 900,
+          "r1": 108,
+          "expectX": 195,
+          "expectY": 400
+        }
+      ]
+    },
+    {
+      "name": "clampRingCentre centres on the axis that cannot fit, and clamps on the one that can",
+      "clamp": [
+        {
+          "x": 160,
+          "y": 130,
+          "vw": 320,
+          "vh": 260,
+          "r1": 92,
+          "expectX": 160,
+          "expectY": 130
+        },
+        {
+          "x": 10,
+          "y": 10,
+          "vw": 320,
+          "vh": 260,
+          "r1": 92,
+          "expectX": 116,
+          "expectY": 130
+        },
+        {
+          "x": 300,
+          "y": 250,
+          "vw": 200,
+          "vh": 200,
+          "r1": 92,
+          "expectX": 100,
+          "expectY": 100
+        }
+      ]
+    },
+    {
+      "name": "the committing band follows the machine's own geometry, not a global",
+      "n": 4,
+      "geom": {
+        "startDeg": -90,
+        "clockwise": true,
+        "r0": 36,
+        "r1": 92,
+        "cancelScale": 1.35,
+        "longPressMs": 350,
+        "slop": 10
+      },
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "down",
+          "r": 120,
+          "thetaDeg": 0
+        },
+        {
+          "t": 160,
+          "type": "up",
+          "r": 120,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [
+        1
+      ],
+      "expect": {
+        "committed": 1,
+        "cancelled": false
+      }
+    },
+    {
+      "name": "a shrunken ring cancels beyond its own r_cancel (124.2), not the default",
+      "n": 4,
+      "geom": {
+        "startDeg": -90,
+        "clockwise": true,
+        "r0": 36,
+        "r1": 92,
+        "cancelScale": 1.35,
+        "longPressMs": 350,
+        "slop": 10
+      },
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "down",
+          "r": 130,
+          "thetaDeg": 0
+        },
+        {
+          "t": 160,
+          "type": "up",
+          "r": 130,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [],
+      "expect": {
+        "committed": null,
+        "cancelled": true
+      }
     }
   ]
 }
