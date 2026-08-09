@@ -80,7 +80,7 @@ Until that lands:
 ```sh
 npm ci                      # pinned; the lockfile is the claim
 npx playwright install chromium
-npm test                    # the whole suite
+npm test                    # the whole suite, in two passes (see below)
 npm run verify              # suite, then regenerate docs/ + README from its artifacts
 npm run sync:vectors        # regenerate index.html's inline vector block from conformance/vectors.json
 ```
@@ -91,6 +91,13 @@ applications bundle it (kdenlive, Ardour, Blender, winget/scoop/chocolatey
 shims). "Not on PATH" is not "not installed" — on Windows it routinely is not.
 If none is found the motion topics record a still frame and say so in the
 generated page; they do not fail and they do not delete anything.
+
+`npm test` runs twice on purpose: the bulk of the suite in parallel, then the
+tests tagged `@timing` with a single worker. A latency budget cannot be
+measured while seven other browsers compete for the CPU — the same assertion
+measured p95 0.0 ms at three workers and 1.8 ms at eight, on identical code.
+`npm run test:all` runs everything in one parallel pass and will intermittently
+fail those two tests; that is the harness being measured, not a regression.
 
 ### Three rules specific to this repository
 

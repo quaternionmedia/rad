@@ -17,7 +17,10 @@ test.describe.configure({ mode: 'parallel' });
 
 for (const topic of TOPICS) {
   test.describe(topic.id, () => {
-    test(topic.title, async ({ page }, testInfo) => {
+    // `@timing` topics measure a latency budget, so they run in a second pass
+    // with one worker (see package.json). The tag is on the test name only;
+    // the topic title the docs use is untouched.
+    test(topic.title + (topic.timing ? ' @timing' : ''), async ({ page }, testInfo) => {
       ensureStaging();
       const errors = [];
       // Emulated explicitly rather than through a describe-level test.use():

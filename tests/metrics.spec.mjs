@@ -110,7 +110,7 @@ test('selection is quantized when Q is on, like any other intent', async ({ page
   expect(it.grid.div).toBe(1);
 });
 
-test('TTC p95 meets the 16 ms budget over a real sample', async ({ page }) => {
+test('TTC p95 meets the 16 ms budget over a real sample @timing', async ({ page }) => {
   const p = await nodeCenter(page, 'qm');
   await page.mouse.click(p.x, p.y);
   await page.waitForTimeout(80);
@@ -124,7 +124,7 @@ test('TTC p95 meets the 16 ms budget over a real sample', async ({ page }) => {
   expect(p95(ttcs), `TTC p95 over ${ttcs.length} samples`).toBeLessThanOrEqual(16);
 });
 
-test('grid jitter p95 meets the record\'s 1 ms budget, not a looser private one', async ({ page }) => {
+test('grid jitter p95 meets the record\'s 1 ms budget, not a looser private one @timing', async ({ page }) => {
   // The gate this replaces asserted 5ms while the record and the README both
   // printed ≤1ms. A silently relaxed budget cannot detect the regression it
   // claims to measure.

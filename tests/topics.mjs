@@ -227,6 +227,7 @@ export const TOPICS = [
   },
   {
     id: 'quantized-commit',
+    timing: true,          // measures a latency budget: must not share the CPU
     title: 'Quantized commit (MIDI-clock ready)',
     prose: 'With Q on, intents are scheduled to the next grid point and stamped with their delta — @b12+0.3ms. The grid is the beat divided by the subdivision axis, so Grid: 4 per beat quantizes four times as finely. The clock is an internal metronome or external MIDI clock (24 PPQN, median-filtered tempo, phase per beat). Budget: grid jitter p95 ≤ 1 ms, asserted at that number and not a looser one.',
     drive: async (c) => {

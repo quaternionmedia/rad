@@ -215,7 +215,13 @@ intents that land **on time**, not merely fast.
   measured jitter is the commit queue's cost rather than the scheduler's, and a
   meter that mixes the two is measuring something the budget does not name.
   Implementations report the count of intents sharing a grid point alongside
-  the percentile; tempo estimate within
+  the percentile. **A timing budget is also a claim about the machine that
+  measured it**: the same suite measured p95 0.0 ms with three parallel
+  workers and 1.8 ms with eight, on identical code and with no intents sharing
+  a grid point. A harness that measures a latency budget while competing for
+  the CPU is measuring the harness. Budgets are verified in a pass that does
+  not share the machine, and an implementation claiming one says how it was
+  isolated; tempo estimate within
   ±0.5 BPM of a clean external clock. Meters are mandatory (see the
   interaction-efficiency-metrics record).
 - The state machine remains time-free except `longPressMs`; clocks and

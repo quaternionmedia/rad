@@ -82,7 +82,7 @@ the full transcript is in `REVIEW.md` at this repository's root.
 | C9 | The destructive action's label failed WCAG AA contrast | the contract's behavioural checklist | Computed 4.17:1 for `--danger` on `--wedge`; AA for normal text is 4.5:1 | **Closed.** Contrast is a test, over every theme, at the threshold for the rendered size |
 | C10 | Code cited record numbers belonging to another project's corpus (`ADR-002`, `ADR-003`) | decision-record-discipline — numbers are assigned at ratification and are local to a project | Two comments in `index.html` | **Closed.** Citations are by title |
 | C11 | Project records sat at `docs/records/`, not in `adr/` on a `project/rad` branch of the governance submodule | the corpus's branch-per-project model | Directory layout | **Open — shape closed, location open.** Records are in `adr/` with the seed's lifecycle. The location depends on §4 |
-| C12 | No `LICENSE`, no `LICENSES/`, no `REUSE.toml` | outbound-licensing | Absence | **Closed.** `reuse lint` runs in reporting mode until the first green run is recorded here |
+| C12 | No `LICENSE`, no `LICENSES/`, no `REUSE.toml` | outbound-licensing | Absence | **Closed and blocking.** `reuse lint` is the verbatim seed workflow, left blocking rather than started in reporting mode, because it passed on its first run: 72/72 files carry copyright and licence, all four declared licences are used, no unused licences (2026-08-09, `python project-seed/ci/run_workflows_locally.py`) |
 | C13 | The platform-free core is a comment header inside a 1,514-line file that also calls `document`, so the import-boundary lint the contract requires cannot exist | the contract's own Conformance clause §2 | `index.html` structure | **Open.** Drafted separately as *rad core extraction*; it is a larger change than a compliance fix and deserves its own decision |
 
 ### §4 What only a human can do
@@ -111,7 +111,7 @@ The eight rows `adr/README.md` requires, answered honestly.
 | Obligation | State |
 |---|---|
 | **Baseline component audit** | §6 below. One runtime dependency, one dev dependency |
-| **Licence gates, cumulatively** | This project ships no image and one package ecosystem (npm). The npm path is gated by `package-lock.json` plus `reuse lint`. There is no SBOM-per-image obligation because there is no image; if a container ever ships, that obligation attaches then |
+| **Licence gates, cumulatively** | This project ships no image and one package ecosystem (npm). The npm path is gated by `package-lock.json` plus `reuse lint`, green and blocking since 2026-08-09. There is no SBOM-per-image obligation because there is no image; if a container ever ships, that obligation attaches then |
 | **Service inventory** | **None.** `rad` reaches no third-party service at runtime. It is a static file; there is no network call in `index.html`. This row is satisfied by the inventory being empty and by that being verifiable |
 | **Quarterly upstream scan** | **Gap.** Not scheduled. With one pinned upstream (`@playwright/test`, MIT) the cost of the gap is low, and low is not zero. Compliance is a scheduled workflow watching the pin's licence file and archive status |
 | **Seam protocol named** | §2 table |
@@ -188,8 +188,8 @@ expensive to satisfy elsewhere.
 - `index.html` acquires a runtime dependency, a network call, or a server —
   §6 stops being nearly empty and the control-plane answer in §5 changes.
 - The core-extraction draft is decided either way (closes or entrenches C13).
-- `reuse lint` first passes cleanly — this record records the date and the
-  workflow moves from reporting to blocking.
+- A second package ecosystem or a container image enters the project — the
+  licence-gate row in §5 becomes two obligations rather than one.
 - A third conflict class is found that none of C1–C13 anticipated, suggesting the
   review that produced this table was structurally incomplete rather than merely
   finite.
