@@ -117,7 +117,24 @@ this project exists to produce.
 
 **Claim:** the contract survives contact with hosts `rad` does not control.
 
-**Proving consumers:** **apothecary** and **benchmark**.
+**Proving consumers:** **codecartographer**, **apothecary** and **benchmark**.
+
+codecartographer was added on 2026-08-09, after it had integrated. It was
+missing by oversight rather than by decision, and the oversight was visible as
+a disagreement between two records written the same day: the *rad platform
+plans* draft opens "Order of work: modern web first (host exists:
+codecartographer)" and gives it a five-step integration plan and a definition
+of done, while this record did not name it at all. The platform plan was
+right. codecartographer also has the strongest claim available on the merits —
+the standard vocabulary in the contract's §1 is a *graph-manipulation*
+vocabulary, and it is the only host with a graph.
+
+This does not relax the second-data-point rule below. codecartographer's
+integration is partly the author marking his own homework: this project's
+contract was written with codecartographer's legacy menu as its worked
+example, so the seam was shaped against that host before that host used it.
+apothecary and benchmark remain required, and the two-independent-hosts
+requirement is unchanged.
 
 **Discharged by:**
 - An **integration standard**, now drafted as *rad host integration standard*:
@@ -145,7 +162,26 @@ this project exists to produce.
   vector added has probably not been integrated hard enough, and the run that
   produces no finding is itself worth recording.
 
-**Does not claim:** anything about non-web platforms. Both consumers are web.
+  **First one in, from codecartographer, 2026-08-09.** `cancelScale` is
+  unpinned by the behavioural suite: changing it from 1.35 to 1.60 fails no
+  vector, and the undetected window is `[1.3043, 1.413)`. The cases probe
+  `r_cancel` at r=130/200 against r1=108 and at r=120/130 against r1=92, so
+  none straddles the boundary closely enough to constrain the multiplier. It
+  was caught by asserting the vector set's own `geometry` block against the
+  port's constants — not by any behavioural case.
+
+  This matters more than a typical gap because the *rad interaction contract*
+  draft's own revision triggers say 1.35 "has not been validated against a
+  human". The constant most likely to be tuned is the one nothing is watching,
+  and tuning it silently changes where a gesture cancels.
+
+  *Proposed vector:* a boundary pair at r1=108 — r=145.7 commits, r=145.9
+  cancels — pinning the multiplier to ±0.001. Not applied here: §5.5 of the
+  integration standard says a divergence is a proposed vector rather than a
+  local patch, and adding a vector is amending the contract.
+
+**Does not claim:** anything about non-web platforms. All three consumers are
+web.
 
 #### v0.0.3 — the first non-web platform
 
