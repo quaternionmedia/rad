@@ -33,13 +33,16 @@ count.
 | Line | Where | Increments when | Today |
 |---|---|---|---|
 | **Product** | git tags `vMAJOR.MINOR.PATCH`, mirrored in `package.json` | a release is cut per §2 | **`0.0.0` — unreleased** |
-| **Vectors** | `conformance/vectors.json` `version` | the executable contract changes | `0.3.0` |
+| **Vectors** | `conformance/vectors.json` `version` | the executable contract changes | whatever that file declares — `0.4.0` as of 2026-08-09 |
 
 These are different numbers about different things and they will not converge.
 The vector line is the one the contract tells implementations to pin — "an
-implementation pins the vector version it claims" — and it moved three times
+implementation pins the vector version it claims" — and it moved several times
 before any release existed, which is correct: the contract was being written.
 The product line starts at zero because nothing has been released.
+
+The vector figure above carries a date because it moves independently of this
+record. Read it from `conformance/vectors.json`; do not quote it from here.
 
 `package.json` is set to `0.0.0` and stays there until a human cuts `v0.0.1`.
 An unreleased package advertising `0.3.0` is the failure the org record

@@ -17,7 +17,7 @@ the in-app help (rendering the *live* composable), the generated user guide,
 and the screenshot/video tests — with the topic id doubling as the media
 filename, and Roborazzi set to re-record on every ordinary test run into a
 tracked docs directory. rad has now reproduced the pattern in a second
-stack (Playwright/Node): `tests/topics.mjs` + `tests/run.mjs`. Two instances,
+stack (Playwright/Node): `tests/topics.mjs` plus a Playwright project. Two instances,
 per the second-data-point rule, is a record.
 
 ## Decision

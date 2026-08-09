@@ -53,6 +53,13 @@ what was actually verified.
 
 ---
 
+## Start here if you are picking this up cold
+
+`HANDOFF.md` at this repo's root states which commit the last session worked
+against, what is unpushed, what has drifted against the qm seed, and what is
+queued. Read it before the sections below — several of them describe a state
+that a pending reconciliation changes.
+
 ## Where this project's governance actually is, today
 
 **`adr/` is at this repository's root, not inside `governance/qm`.** That is a

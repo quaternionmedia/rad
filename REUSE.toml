@@ -30,6 +30,7 @@ path = [
   "adr/DRAFT-*.md",
   "README.md",
   "REVIEW.md",
+  "HANDOFF.md",
   "docs/guide/**",
   "docs/media/**",
 ]

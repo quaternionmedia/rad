@@ -136,8 +136,8 @@ expensive to satisfy elsewhere.
 
 `rad` is **unreleased**. `package.json` reads `0.0.0` and no tag exists; the
 `0.3.0` that sat there asserted a release nobody cut. `conformance/vectors.json`
-stays at `0.3.0`, which is a separate line the contract tells implementations to
-pin. The *rad release milestones* draft settles what each tag will claim and
+carries a separate line the contract tells implementations to pin — read the
+current value from that file rather than from here. The *rad release milestones* draft settles what each tag will claim and
 which consuming project proves it.
 
 Two entries in §5 above are answered "none" only while the deliverable is a
