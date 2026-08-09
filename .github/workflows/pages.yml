@@ -1,12 +1,25 @@
-# Splash CI/CD: the unified artifact harness IS the deploy gate.
-# tests/run.mjs replays every tour topic against index.html, regenerates
-# docs/guide + docs/media + README, and exits nonzero on any failure —
-# so a stale or broken splash never reaches Pages.
-name: splash
+# The verification suite IS the deploy gate.
+#
+# Playwright replays every topic against index.html; scripts/build-docs.mjs
+# then regenerates docs/guide, docs/media and README.md from that run's
+# artifacts. Only a green suite produces docs, and only matching docs deploy.
+#
+# Three things this fixes, each of which made a green check mean less than it
+# looked (see REVIEW.md §3.9 and the adoption record's conflict table):
+#   - it ran only on push to main, so no pull request was ever verified: the
+#     gate fired strictly after the merge it existed to gate;
+#   - `npm install playwright` with no lockfile pinned nothing in the step
+#     that gates a deploy;
+#   - nothing compared the regenerated artifacts with the committed ones, so
+#     README.md and docs/media on GitHub could be arbitrarily stale while
+#     every check was green. "Staleness = redness" held for the website and
+#     not for the repository.
+name: rad
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -15,7 +28,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,24 +36,59 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install harness deps
-        run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
-          npm init -y >/dev/null
-          npm install playwright
-          npx playwright install --with-deps chromium
-      - name: Run unified artifact harness (tests = docs = media = README)
-        run: node tests/run.mjs
+          cache: npm
+
+      # ci, not install: the lockfile is the claim (version-tags-are-claims).
+      - name: Install pinned dependencies
+        run: npm ci
+
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Vectors are in sync with the governed file
+        run: node scripts/sync-vectors.mjs --check
+
+      - name: Verify (suite gates everything downstream)
+        run: npm test
+
+      # --check consumes the same artifacts the suite just wrote, so it replaces
+      # a regenerate step rather than following one: generating first would
+      # delete the staging directory the check needs.
+      #
+      # The check the previous workflow lacked. Structural, not byte-equal:
+      # measured values legitimately change every run (that is the "numbers are
+      # measurements" rule working), and screenshots rendered on Ubuntu will
+      # never match ones rendered on a contributor's machine. A byte gate over
+      # either would fail permanently and teach people to ignore it. This
+      # compares the topic list, the prose, the vocabulary, the geometry and
+      # every guide page, with the Measured table's own values masked.
+      - name: Committed artifacts match a fresh run
+        run: node scripts/build-docs.mjs --check
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
       - name: Upload verified site
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
   deploy:
     needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
