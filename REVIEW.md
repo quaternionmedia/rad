@@ -558,3 +558,13 @@ becomes unit-testable in Node without a browser.
 I have not done this, because it is a larger change than the mandate I was given
 and it deserves its own record and its own review. It is drafted as
 `adr/DRAFT-rad-core-extraction.md` with status `Proposed`, pending your decision.
+
+A later pass made the core **reachable** — `window.rad` is a frozen object
+holding the platform-free functions plus a session API, specified in
+`adr/DRAFT-rad-host-integration-standard.md`. That is worth distinguishing from
+the recommendation above rather than mistaking for it. Reachability lets a host
+integrate and lets the seam be tested from outside the page, and it does
+nothing at all for the import boundary: the core still shares a file with a
+renderer, so the grep lint the contract requires still cannot exist. A test
+asserts that no exposed function mentions the DOM, which is the weaker in-page
+form of that lint and is not a substitute for it.
