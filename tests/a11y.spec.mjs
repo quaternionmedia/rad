@@ -92,24 +92,6 @@ test('roving tabindex keeps exactly one node in the tab order', async ({ page })
   expect(counts.minus).toBeGreaterThan(0);
 });
 
-test('touch targets meet the 44px floor on a coarse pointer', async ({ page }) => {
-  await bootPage(page, { closeTour: false });
-  // The floor is a `@media (pointer: coarse)` rule, so it does not apply to a
-  // mouse. Asserting it on the desktop project would be asserting that the
-  // media query does not work.
-  const coarse = await page.evaluate(() => matchMedia('(pointer: coarse)').matches);
-  test.skip(!coarse, 'fine pointer: the 44px floor is a coarse-pointer rule');
-  const small = await page.evaluate(() => {
-    const out = [];
-    for (const el of document.querySelectorAll('button.chip, .step .go, .t-row input[type="range"]')) {
-      const b = el.getBoundingClientRect();
-      if (b.width && b.height && Math.min(b.width, b.height) < 44) out.push(`${el.id || el.className}: ${Math.round(b.width)}×${Math.round(b.height)}`);
-    }
-    return out;
-  });
-  expect(small, 'controls below the 44px touch floor').toEqual([]);
-});
-
 test('reduced motion collapses every duration, including the speed axes', async ({ page, browserName }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await bootPage(page, { closeTour: false });

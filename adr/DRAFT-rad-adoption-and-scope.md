@@ -132,6 +132,20 @@ The deliverable's row is the point of the table: the licence surface of what shi
 is empty, which is what makes the open-license record cheap to satisfy here and
 expensive to satisfy elsewhere.
 
+### §6b Version line
+
+`rad` is **unreleased**. `package.json` reads `0.0.0` and no tag exists; the
+`0.3.0` that sat there asserted a release nobody cut. `conformance/vectors.json`
+stays at `0.3.0`, which is a separate line the contract tells implementations to
+pin. The *rad release milestones* draft settles what each tag will claim and
+which consuming project proves it.
+
+Two entries in §5 above are answered "none" only while the deliverable is a
+static file that makes no network call. The milestone draft's `v0.0.4`
+(collaborative and offline-LAN modes) ends that property and reopens the service
+inventory, the control-plane answer, and the licence-gate row. Recorded here
+rather than discovered later.
+
 ### §7 Risk register
 
 | Risk | Likelihood | Consequence | Mitigation |
@@ -142,6 +156,8 @@ expensive to satisfy elsewhere.
 | **Playwright as the only test runner** | Low | A runner change rewrites the harness | The topic registry is runner-agnostic by construction; `tests/topics.mjs` has no Playwright import |
 | **Web MIDI availability** | Medium | The clock's external path is unavailable in Firefox and Safari | Internal clock is the default and is fully functional; MIDI is an enhancement and the UI says so when it is absent |
 | **Governance stranded on one disk** | Medium | The exact failure the org's rollout page found in three of nine projects | §4 is written as commands with checks, so the gap is visible rather than assumed closed |
+| **A milestone claimed before its consumer ships** | Medium | The version line stops measuring evidence and becomes a progress bar, which is the failure the org's version record exists to prevent | The milestone draft's §4 makes the consumer part of the claim, and the tag annotation names the commit that proves it |
+| **The gate shrinks by attrition** | Medium | Moving an inconvenient test out of the deterministic gate is always locally reasonable and cumulatively fatal | `scripts/check-gate.mjs` prints the gate's test count on every run, so a shrinking gate is visible rather than inferred |
 
 ## Consequences
 

@@ -351,7 +351,10 @@
   #tour-panel.playing .t-transport #play-chip { border-color: var(--rad-accent); color: var(--rad-accent); }
   @media (pointer: coarse) {
     .t-row input[type="range"] { min-height: 44px; }
-    .t-link input { width: 22px; height: 22px; }
+    /* The link checkbox was a 22px target inside a page that holds everything
+       else to 44. Widening the test selector to include it is what surfaced
+       that; a large checkbox is the consistent answer, not an exemption. */
+    .t-link input { width: 44px; height: 44px; }
   }
 
   /* The icon-only chips joined the 44px-tall box at 35px wide:

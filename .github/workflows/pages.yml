@@ -55,8 +55,20 @@ jobs:
       - name: Vectors are in sync with the governed file
         run: node scripts/sync-vectors.mjs --check
 
-      - name: Verify (suite gates everything downstream)
-        run: npm test
+      # The release gate. Deterministic only: no clock-reading test, no
+      # retries, and scripts/check-gate.mjs fails the run on any skip, rerun or
+      # flake by reading what the run reported rather than what the config
+      # says. This is the step a tag annotation may cite as automated
+      # validation (version-tags-are-claims §2, §3, §7).
+      - name: Gate (deterministic; the only step a release claim may rest on)
+        run: npm run gate
+
+      # Measurements. Real and published, and NOT validation: they read a wall
+      # clock, so §3 excludes them from a release claim. Run alone, because the
+      # same assertion measured 0.0 ms and 1.8 ms depending only on how many
+      # browsers shared the CPU.
+      - name: Measure (latency budgets; reported, not claimed)
+        run: npm run measure
 
       # --check consumes the same artifacts the suite just wrote, so it replaces
       # a regenerate step rather than following one: generating first would

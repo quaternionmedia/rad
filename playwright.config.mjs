@@ -19,10 +19,18 @@ export default defineConfig({
   outputDir: './test-results',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  // No retries, anywhere. version-tags-are-claims §3: a test that retries
+  // "contributes nothing" to a release claim, and §7 requires CI to fail a
+  // release build whose run reports a rerun. A retry that turns a red run
+  // green is the exact mechanism that launders a timing dependency into a
+  // green check, so the option is not available rather than merely unused.
+  retries: 0,
   workers: process.env.CI ? 2 : undefined,
   timeout: 60_000,
   expect: { timeout: 7_000 },
+  // The JSON report is not a convenience: scripts/check-gate.mjs reads it to
+  // establish that the run was deterministic, so it is produced on every run
+  // rather than only in CI.
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never' }], ['json', { outputFile: 'test-results/results.json' }]]
     : [['list'], ['json', { outputFile: 'test-results/results.json' }]],
@@ -47,6 +55,9 @@ export default defineConfig({
     { name: 'touch', use: { hasTouch: true, isMobile: true, video: { mode: 'on', size: { width: 390, height: 900 } } } },
     {
       name: 'desktop',
+      // touch.spec.mjs is deliberately absent: it asserts coarse-pointer rules
+      // that do not apply to a mouse. Excluding the file is how those run
+      // unconditionally where they mean something, instead of skipping here.
       testMatch: /(contract|conformance|a11y|theme|speed|metrics|governance)\.spec\.mjs/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 860 }, hasTouch: false, isMobile: false, colorScheme: 'dark' },
     },

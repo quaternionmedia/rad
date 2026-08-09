@@ -80,7 +80,9 @@ Until that lands:
 ```sh
 npm ci                      # pinned; the lockfile is the claim
 npx playwright install chromium
-npm test                    # the whole suite, in two passes (see below)
+npm run gate                # the deterministic release gate (see below)
+npm run measure             # the latency budgets, alone
+npm test                    # gate, then measure
 npm run verify              # suite, then regenerate docs/ + README from its artifacts
 npm run sync:vectors        # regenerate index.html's inline vector block from conformance/vectors.json
 ```
@@ -92,12 +94,23 @@ shims). "Not on PATH" is not "not installed" — on Windows it routinely is not.
 If none is found the motion topics record a still frame and say so in the
 generated page; they do not fail and they do not delete anything.
 
-`npm test` runs twice on purpose: the bulk of the suite in parallel, then the
-tests tagged `@timing` with a single worker. A latency budget cannot be
-measured while seven other browsers compete for the CPU — the same assertion
-measured p95 0.0 ms at three workers and 1.8 ms at eight, on identical code.
-`npm run test:all` runs everything in one parallel pass and will intermittently
-fail those two tests; that is the harness being measured, not a regression.
+**The gate and the measurements are different things, and only one of them can
+support a release.** `npm run gate` runs every test that does not read a wall
+clock, with no retries, and then `scripts/check-gate.mjs` reads the run's own
+report and fails on any skip, rerun or flake. `npm run measure` runs the latency
+budgets alone — they are real, they are published in the README, and under the
+org's version-tags-are-claims record §3 they contribute nothing to a release
+claim, because a test that depends on wall-clock timing is not validation.
+
+A latency budget also cannot be measured while seven other browsers compete for
+the CPU: the same assertion measured p95 0.0 ms at three workers and 1.8 ms at
+eight, on identical code. `npm run test:all` runs everything in one parallel
+pass and will intermittently fail those tests; that is the harness being
+measured, not a regression.
+
+If a gate test starts skipping or flaking, fix it or move it to `measure`.
+Do not add a retry — `retries` is 0 by construction and §7 requires CI to fail
+a release build that reports a rerun.
 
 ### Three rules specific to this repository
 

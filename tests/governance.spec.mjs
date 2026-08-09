@@ -92,13 +92,26 @@ test('the index lists every draft in flight', () => {
   expect(missing, 'drafts absent from the index — check 4 of the ADR lint').toEqual([]);
 });
 
-test('no ratified record has a body edit outside Amendments', () => {
-  // Check 3 needs a base ref to diff against, which a single-branch working
-  // tree does not have. It is skipped rather than passed silently, exactly as
-  // adr_lint.py does without --base-ref.
-  const accepted = drafts.filter((f) =>
-    /^\|\s*\*\*Status\*\*\s*\|\s*Accepted/m.test(fs.readFileSync(path.join(ADR, f), 'utf8')));
-  test.skip(accepted.length === 0, 'nothing is ratified yet, so there is no append-only body to protect');
+test('the append-only invariant holds over whatever is ratified', () => {
+  // This used to skip when nothing was ratified. A skipped test is an absent
+  // test that has announced itself (version-tags-are-claims §3), so it counted
+  // for nothing in a release claim. Restated as an invariant that runs
+  // unconditionally and is true of an empty set as well as a full one:
+  // a ratified record is numbered, and carries the Amendments region its body
+  // is appended to. Diffing a ratified body against a base ref is check 3 of
+  // the real lint and belongs there, not here.
+  const all = fs.readdirSync(ADR).filter((f) => f.endsWith('.md') && f !== 'README.md' && f !== 'TEMPLATE.md');
+  const problems = [];
+  for (const f of all) {
+    const raw = fs.readFileSync(path.join(ADR, f), 'utf8');
+    const status = (raw.match(/^\|\s*\*\*Status\*\*\s*\|\s*(\S+)/m) || [])[1] ?? '';
+    const ratified = ['Accepted', 'Deprecated', 'Superseded'].includes(status);
+    const numbered = /^(ADR|QM)-\d{4}-/.test(f);
+    if (ratified && !numbered) problems.push(`${f}: ratified but has no number in its filename`);
+    if (numbered && !ratified) problems.push(`${f}: numbered but Status is "${status}"`);
+    if (ratified && !raw.includes('## Amendments')) problems.push(`${f}: ratified with no Amendments region to append to`);
+  }
+  expect(problems).toEqual([]);
 });
 
 test('the governance pointer files are symlinks, not copies', () => {

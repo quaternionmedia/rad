@@ -231,10 +231,11 @@ together.
 Drafts in flight (numberless, by title):
 
 - Interaction efficiency metrics (IPA, abstraction ledger, systemization index)
+- Tempo-driven interaction speed
+- Unified artifact pipeline (tests = docs = README = media)
 - rad adoption and scope
 - rad core extraction
 - rad interaction contract
 - rad platform implementation plans
+- rad release milestones
 - rad theme tokens
-- Tempo-driven interaction speed
-- Unified artifact pipeline (tests = docs = README = media)
