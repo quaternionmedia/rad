@@ -12,7 +12,7 @@ conflict table, and the steps still owed are in
 [adr/DRAFT-rad-adoption-and-scope.md](adr/DRAFT-rad-adoption-and-scope.md).
 An honest review of this repository is in [REVIEW.md](REVIEW.md).
 
-**Vectors v0.4.0 · 12/12 topics verified · 40 conformance cases · 4 themes**
+**Vectors v0.5.0 · 12/12 topics verified · 47 conformance cases · 4 themes**
 
 The contract is the seam: a platform-neutral interaction contract plus
 executable conformance vectors. This web prototype is the reference
@@ -52,7 +52,7 @@ rather than reported.
 |---|---|---|---|
 | IPA, release-select gesture | 1 | 1 verb | 1 |
 | IPA, chord verbs (worst case) | 1 | 32 verbs | 1 |
-| TTC p95, chord | 1.10 ms | 33 | ≤ 16 ms |
+| TTC p95, chord | 1.60 ms | 33 | ≤ 16 ms |
 | Grid jitter p95, quantized | 0.00 ms | 24 | ≤ 1 ms |
 
 ## Speed: three axes, MIDI-drivable
@@ -124,7 +124,7 @@ CharaChorder-class devices hit these as single chords over plain HID.
 
 ```
 index.html                the splash: demo + tour + meters, single file, no deps
-conformance/vectors.json  executable half of the contract (v0.4.0) — the SOURCE;
+conformance/vectors.json  executable half of the contract (v0.5.0) — the SOURCE;
                           index.html's inline block is generated from it
 adr/                      governed records under the qm constitution
 perspectives/             non-binding notes

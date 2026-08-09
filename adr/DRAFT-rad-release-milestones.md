@@ -162,23 +162,52 @@ requirement is unchanged.
   vector added has probably not been integrated hard enough, and the run that
   produces no finding is itself worth recording.
 
-  **First one in, from codecartographer, 2026-08-09.** `cancelScale` is
-  unpinned by the behavioural suite: changing it from 1.35 to 1.60 fails no
-  vector, and the undetected window is `[1.3043, 1.413)`. The cases probe
-  `r_cancel` at r=130/200 against r1=108 and at r=120/130 against r1=92, so
-  none straddles the boundary closely enough to constrain the multiplier. It
-  was caught by asserting the vector set's own `geometry` block against the
-  port's constants — not by any behavioural case.
+  **First one in, from codecartographer, 2026-08-09.** `cancelScale` was
+  unpinned by the behavioural suite: changing it from 1.35 to 1.60 failed no
+  vector. It was caught by asserting the vector set's own `geometry` block
+  against the port's constants — not by any behavioural case, which is the more
+  useful half of the finding: the constants block was doing work the traces
+  were not.
 
   This matters more than a typical gap because the *rad interaction contract*
   draft's own revision triggers say 1.35 "has not been validated against a
   human". The constant most likely to be tuned is the one nothing is watching,
   and tuning it silently changes where a gesture cancels.
 
-  *Proposed vector:* a boundary pair at r1=108 — r=145.7 commits, r=145.9
-  cancels — pinning the multiplier to ±0.001. Not applied here: §5.5 of the
-  integration standard says a divergence is a proposed vector rather than a
-  local patch, and adding a vector is amending the contract.
+  **The undetected window was wider than first reported.** Measured by scanning
+  the multiplier until a vector fails: `[1.2038, 1.8518]`, not `[1.3043,
+  1.413)`. The narrower figure assumed all four `r_cancel` probes constrained
+  the default, but the two at `r1=92` carry their own `geom` override — which
+  sets `cancelScale` inline — so they pin the value *within the case* and
+  constrain the default not at all. Only the `r1=108` probes bear on it:
+  `130 ≤ 108·cs` and `200 > 108·cs`.
+
+  That is worth stating as a general property rather than a correction. **A
+  vector carrying a `geom` override tests the override path and cannot double
+  as a pin on the defaults.** Any future case that overrides geometry inherits
+  the same blind spot.
+
+  **Resolved, and generalised.** The proposed boundary pair is applied
+  (r=145.7 commits, r=145.9 cancels at r1=108), and a sweep asked the same
+  question of every constant in the geometry and time blocks. Four were
+  unpinned, not one. Three are now pinned by boundary cases — `chordGapMs`,
+  `burstSplitMs`, `topInset` — and two, `longPressMs` and `slop`, are
+  unpinnable from core traces by construction: the machine takes an explicit
+  `longpress` event, and slop lives in the input adapter and never reaches
+  `step()`. Those two became checklist items in the contract's Conformance
+  section, which is what that section is for.
+
+  `tests/pinning.spec.mjs` now perturbs every constant on every run and
+  requires the suite to notice, so the class of defect closes rather than the
+  instance. It also fails when a constant is added to the core and listed in
+  neither category, which is how this stays true.
+
+  Applying the vector rather than leaving it proposed is a departure from the
+  integration standard's §5.5, and the reason is that §5.5 governs a *host*
+  reporting a divergence in behaviour. This changed no behaviour: it made an
+  existing clause — `r_cancel = 1.35 · r₁`, already written in the contract —
+  checkable. This project's own rule is the one that applies, and it says to
+  capture at the cheap tier first.
 
 **Does not claim:** anything about non-web platforms. All three consumers are
 web.

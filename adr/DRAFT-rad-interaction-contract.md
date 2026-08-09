@@ -264,6 +264,20 @@ and `splitBursts`. A conformant implementation:
    pattern);
 3. passes the behavioral checklist: 44-unit targets, keyboard path, screen-reader
    labels, dead-zone cancel, ≤8 items.
+4. **matches the constants no vector can reach.** `longPressMs` and `slop` are
+   unpinnable from traces by construction — the machine takes an explicit
+   `longpress` event, and slop lives in the input adapter and never in
+   `step()`. A port could therefore use any long-press threshold and pass every
+   vector truthfully. They are checklist items, verified by hand against a
+   device, and an implementation states the values it used.
+
+**Every other constant in the geometry and time blocks is pinned to ±1% by a
+vector, and `tests/pinning.spec.mjs` proves it by perturbing each one and
+requiring the suite to notice.** That test exists because `cancelScale` was
+found satisfied by anything in `[1.2038, 1.8518]` — a suite can pass while the
+constant it governs moves, which makes conformance an assertion about a file
+rather than about behaviour. A constant added to the core later fails that test
+until it is either pinned or listed as knowingly unpinnable.
 
 Vectors are versioned with semver; implementations pin the vector version they
 claim (version-tags-are-claims). Changing a vector is amending this record.
