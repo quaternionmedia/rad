@@ -85,8 +85,12 @@ npm run verify              # suite, then regenerate docs/ + README from its art
 npm run sync:vectors        # regenerate index.html's inline vector block from conformance/vectors.json
 ```
 
-`ffmpeg` is optional. Without it the motion topics record a still frame and say
-so in the generated page; they do not fail and they do not delete anything.
+`ffmpeg` is optional, and `scripts/build-docs.mjs` looks for it before
+concluding it is missing: `FFMPEG_PATH`, then `PATH`, then the places
+applications bundle it (kdenlive, Ardour, Blender, winget/scoop/chocolatey
+shims). "Not on PATH" is not "not installed" — on Windows it routinely is not.
+If none is found the motion topics record a still frame and say so in the
+generated page; they do not fail and they do not delete anything.
 
 ### Three rules specific to this repository
 

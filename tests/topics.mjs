@@ -263,21 +263,21 @@ export const TOPICS = [
   },
   {
     id: 'themes',
-    title: 'Three themes over one token layer',
-    prose: 'Colour is a token, never a literal. Dark, light and a high-contrast theme are palette swaps over a single two-tier token layer; node hues, wedge fills and the swatch ring all resolve through it. Every text pair is contrast-tested in every theme at the WCAG threshold for its rendered size, which is how the destructive wedge label stopped failing AA.',
+    title: 'Four themes over one token layer',
+    prose: 'Colour is a token, never a literal. Four themes — radical (the neon default), dark, light and a high-contrast one — are palette swaps over a single two-tier token layer; node hues, wedge fills and the swatch ring all resolve through it. radical sets the mood: a soft deep-indigo ground so the neon has something to sit on rather than vibrate against, with warm amber as the one deliberately non-neon hue. Every text pair is contrast-tested in every theme at the WCAG threshold for its rendered size, which is how the destructive wedge label stopped failing AA — it now clears it by 40%.',
     drive: async (c) => {
       const p = await c.nodeCenter('qm');
       const t = await c.touch();
       await t.start(p.x, p.y);
       await c.page.waitForTimeout(450);
       await t.move(p.x + 60, p.y + 60, 4);
-      for (const th of ['dark', 'light', 'contrast']) {
+      for (const th of ['radical', 'dark', 'light', 'contrast']) {
         await c.page.evaluate((n) => setTheme(n), th);
         await c.page.waitForTimeout(140);
         await c.snap(th);
       }
       await t.end();
-      await c.page.evaluate(() => setTheme('dark'));
+      await c.page.evaluate(() => setTheme('radical'));
     },
     assert: async (c) => {
       const f = [];
@@ -287,13 +287,15 @@ export const TOPICS = [
           setTheme(th);
           out[th] = getComputedStyle(document.documentElement).getPropertyValue('--rad-wedge-fill').trim();
         }
-        setTheme('dark');
+        setTheme('radical');      // restore the default; this call also persists
         return out;
       });
       const values = Object.values(seen);
       if (new Set(values).size !== values.length) f.push(`themes are not distinct: ${JSON.stringify(seen)}`);
       const persisted = await c.page.evaluate(() => localStorage.getItem('rad.theme'));
-      if (persisted !== 'dark') f.push(`theme choice not persisted (${persisted})`);
+      if (persisted !== 'radical') f.push(`theme choice not persisted (${persisted})`);
+      const dflt = await c.page.evaluate(() => defaultTheme());
+      if (dflt !== 'radical') f.push(`the default theme is ${dflt}, expected radical`);
       return f;
     },
   },

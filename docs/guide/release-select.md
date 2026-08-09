@@ -2,6 +2,8 @@
 
 Long-press a node; the menu opens under the finger. Drag onto a wedge and release to commit — a full verb in one continuous gesture (IPA 1). Releasing in the hub cancels, and so does releasing beyond the outer bound: the ring is a band, and both of its edges are the same cancel affordance.
 
+![release-select](../media/release-select.gif)
+
 ![release-select.png](../media/release-select.png)
 ![release-select-after.png](../media/release-select-after.png)
 

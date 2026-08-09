@@ -16,81 +16,127 @@
    * Every text pair here is asserted in tests/theme.spec.mjs at the
    * WCAG threshold for its rendered size, in every theme.
    * ============================================================ */
-  :root, [data-theme="dark"] {
+  :root, [data-theme="radical"] {
+    /* radical — the default. A soft deep indigo ground rather than black, so
+       the neon has something to sit on instead of vibrating against it; warm
+       amber (--rad-gold) is deliberately the one non-neon hue, because a
+       palette where everything glows reads as noise. */
     color-scheme: dark;
-    /* -- palette -- */
-    --rad-bg: #0b0d10;
-    --rad-surface: #14171c;
-    --rad-surface-2: #1c2027;
-    --rad-ink: #e8eaed;
-    --rad-ink-dim: #9aa1ac;
-    --rad-line: #2a2f37;
-    --rad-line-strong: #7d8694;
-    --rad-line-soft: #191d23;
-    --rad-accent: #6f97dd;
-    --rad-accent-ink: #07090c;
-    --rad-signal: #ff7a7e;   /* destructive; lifted until it clears AA on the wedge */
-    --rad-leaf: #63c76f;
-    --rad-calm: #45b3a8;
-    --rad-royal: #a996e0;
-    --rad-gold: #d7b23c;
-    --rad-sky: #6f97dd;
-    --rad-shadow: 11, 13, 16;             /* rgb triple, for rgba() halos */
-    --rad-accent-rgb: 111, 151, 221;
+    --rad-bg: #14111f;
+    --rad-surface: #1d1930;
+    --rad-surface-2: #262041;
+    --rad-ink: #f4eeff;
+    --rad-ink-dim: #bdb2d9;
+    --rad-line: #3b3358;
+    --rad-line-strong: #9186c9;
+    --rad-line-soft: #241f3c;
+    --rad-accent: #5cf0ff;
+    --rad-accent-ink: #0a0716;
+    --rad-signal: #ff7aa8;
+    --rad-leaf: #6ef2a0;
+    --rad-calm: #4ae3d0;
+    --rad-royal: #bd93ff;
+    --rad-gold: #ffc861;
+    --rad-sky: #5cf0ff;
+    --rad-shadow: 20, 17, 31;
+    --rad-accent-rgb: 92, 240, 255;
+  }
+  [data-theme="dark"] {
+    /* dark — the quiet one. Same neon family, pulled back: lower chroma
+       accents on a blue-black ground for long sessions. */
+    color-scheme: dark;
+    --rad-bg: #0d0f16;
+    --rad-surface: #161a24;
+    --rad-surface-2: #1f2430;
+    --rad-ink: #eaeef7;
+    --rad-ink-dim: #a3adc2;
+    --rad-line: #2c3342;
+    --rad-line-strong: #7f8ba5;
+    --rad-line-soft: #1a1f29;
+    --rad-accent: #56d8ff;
+    --rad-accent-ink: #06080d;
+    --rad-signal: #ff7d94;
+    --rad-leaf: #6ee89a;
+    --rad-calm: #4fd8c4;
+    --rad-royal: #b39bff;
+    --rad-gold: #f0c35c;
+    --rad-sky: #56d8ff;
+    --rad-shadow: 13, 15, 22;
+    --rad-accent-rgb: 86, 216, 255;
   }
   [data-theme="light"] {
+    /* light — neon does not survive a white background at 4.5:1, so these
+       are the same hues taken down in luminance rather than a different
+       palette. Soft off-white ground, never pure white. */
     color-scheme: light;
-    --rad-bg: #f7f8fa;
+    --rad-bg: #f6f4fb;
     --rad-surface: #ffffff;
-    --rad-surface-2: #eceef2;
-    --rad-ink: #14171c;
-    --rad-ink-dim: #565d69;
-    --rad-line: #c9cdd6;
-    --rad-line-strong: #6b7280;
-    --rad-line-soft: #dfe2e8;
-    --rad-accent: #2b58a8;
+    --rad-surface-2: #eae7f4;
+    --rad-ink: #16131f;
+    --rad-ink-dim: #514a63;
+    --rad-line: #cbc5da;
+    --rad-line-strong: #6b6383;
+    --rad-line-soft: #e0dcec;
+    --rad-accent: #0060a8;
     --rad-accent-ink: #ffffff;
-    --rad-signal: #b4232a;
-    --rad-leaf: #1f7a33;
-    --rad-calm: #14706a;
-    --rad-royal: #5b3fa8;
-    --rad-gold: #7a5c0a;
-    --rad-sky: #2b58a8;
-    --rad-shadow: 255, 255, 255;
-    --rad-accent-rgb: 43, 88, 168;
+    --rad-signal: #b01248;
+    --rad-leaf: #12703f;
+    --rad-calm: #0d6b64;
+    --rad-royal: #5b34b0;
+    --rad-gold: #74540a;
+    --rad-sky: #0060a8;
+    --rad-shadow: 246, 244, 251;
+    --rad-accent-rgb: 0, 96, 168;
   }
   [data-theme="contrast"] {
+    /* contrast — AAA. Neon at high luminance on true black; every text pair
+       clears 7:1 and no decorative transparency survives. */
     color-scheme: dark;
     --rad-bg: #000000;
     --rad-surface: #000000;
     --rad-surface-2: #000000;
     --rad-ink: #ffffff;
-    --rad-ink-dim: #e4e4e4;
+    --rad-ink-dim: #f0f0f0;
     --rad-line: #ffffff;
     --rad-line-strong: #ffffff;
     --rad-line-soft: #ffffff;
-    --rad-accent: #7cd4ff;
+    --rad-accent: #7df9ff;
     --rad-accent-ink: #000000;
-    --rad-signal: #ff9d9d;
-    --rad-leaf: #7be88a;
-    --rad-calm: #66e6da;
-    --rad-royal: #cbb6ff;
-    --rad-gold: #ffd84d;
-    --rad-sky: #7cd4ff;
+    --rad-signal: #ffa3bd;
+    --rad-leaf: #8dffb0;
+    --rad-calm: #6ff5e4;
+    --rad-royal: #d6b8ff;
+    --rad-gold: #ffd977;
+    --rad-sky: #7df9ff;
     --rad-shadow: 0, 0, 0;
-    --rad-accent-rgb: 124, 212, 255;
+    --rad-accent-rgb: 125, 249, 255;
   }
-  /* System preference decides only when no explicit choice is stored. */
+  /* System preference decides only when no explicit choice is stored. The
+     default is radical; a reader whose system asks for light gets light. */
   @media (prefers-color-scheme: light) {
     :root:not([data-theme]) {
-      color-scheme: light;
-      --rad-bg: #f7f8fa; --rad-surface: #ffffff; --rad-surface-2: #eceef2;
-      --rad-ink: #14171c; --rad-ink-dim: #565d69;
-      --rad-line: #c9cdd6; --rad-line-strong: #6b7280; --rad-line-soft: #dfe2e8;
-      --rad-accent: #2b58a8; --rad-accent-ink: #ffffff;
-      --rad-signal: #b4232a; --rad-leaf: #1f7a33; --rad-calm: #14706a;
-      --rad-royal: #5b3fa8; --rad-gold: #7a5c0a; --rad-sky: #2b58a8;
-      --rad-shadow: 255, 255, 255; --rad-accent-rgb: 43, 88, 168;
+    /* light — neon does not survive a white background at 4.5:1, so these
+       are the same hues taken down in luminance rather than a different
+       palette. Soft off-white ground, never pure white. */
+    color-scheme: light;
+    --rad-bg: #f6f4fb;
+    --rad-surface: #ffffff;
+    --rad-surface-2: #eae7f4;
+    --rad-ink: #16131f;
+    --rad-ink-dim: #514a63;
+    --rad-line: #cbc5da;
+    --rad-line-strong: #6b6383;
+    --rad-line-soft: #e0dcec;
+    --rad-accent: #0060a8;
+    --rad-accent-ink: #ffffff;
+    --rad-signal: #b01248;
+    --rad-leaf: #12703f;
+    --rad-calm: #0d6b64;
+    --rad-royal: #5b34b0;
+    --rad-gold: #74540a;
+    --rad-sky: #0060a8;
+    --rad-shadow: 246, 244, 251;
+    --rad-accent-rgb: 0, 96, 168;
     }
   }
   :root {
@@ -2016,7 +2062,12 @@ function chordContext() {
  * record §1). Nodes and intents carry TOKEN NAMES; the renderer resolves
  * them through the active theme. That is what lets a recorded intent
  * replay correctly under a theme that did not exist when it was recorded. */
-const THEMES = ['dark', 'light', 'contrast'];
+const THEMES = ['radical', 'dark', 'light', 'contrast'];
+/* radical is the default: a soft deep-indigo ground with neon accents and one
+ * deliberately warm, non-neon hue. A reader whose system asks for light gets
+ * light instead — a neon dark theme forced on someone who set a light
+ * preference is a preference being overruled, not a mood. */
+function defaultTheme() { return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'radical'; }
 const SWATCH_TOKENS = ['sky', 'calm', 'royal', 'gold', 'signal'];
 const KIND_TOKEN = { gov: 'kind-gov', py: 'kind-py', web: 'kind-web', android: 'kind-android', new: 'kind-new' };
 let tokenCache = new Map();
@@ -2027,8 +2078,7 @@ function token(name) {                       // '--rad-' is implied
   return v;
 }
 function currentTheme() {
-  return document.documentElement.getAttribute('data-theme')
-    || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  return document.documentElement.getAttribute('data-theme') || defaultTheme();
 }
 function setTheme(name) {
   document.documentElement.setAttribute('data-theme', name);
@@ -2780,7 +2830,7 @@ const TOUR = [
       run: async () => { motion.spotlight(document.getElementById('log')); announce('Try typing n-b-r slowly with a node selected.'); await demo.wait('read'); } },
   ]},
   { ch: 'Look and pace', steps: [
-    { id: 'themes', label: 'Colour is a token, not a hex', desc: 'Three themes — dark, light, and a high-contrast one — are palette swaps over a single token layer. Node colours, wedge fills and the swatch ring all resolve through it, and a <code>color:</code> intent names a token (<code>color:gold</code>), never a colour. That is why a recorded intent still means the same thing under a theme that did not exist when it was recorded.',
+    { id: 'themes', label: 'Colour is a token, not a hex', desc: 'Four themes — <b>radical</b> (the neon default), dark, light and a high-contrast one — are palette swaps over a single token layer. radical grounds the neon on a soft indigo rather than black, and keeps warm amber as the one hue that does not glow. Node colours, wedge fills and the swatch ring all resolve through the layer, and a <code>color:</code> intent names a token (<code>color:gold</code>), never a colour — which is why a recorded intent still means the same thing under a theme that did not exist when it was recorded.',
       run: async () => {
         const start = currentTheme();
         for (const th of THEMES) { setTheme(th); await demo.wait('hold'); }
@@ -2959,7 +3009,7 @@ try {
   storedTheme = localStorage.getItem('rad.theme');
   storedTempo = JSON.parse(localStorage.getItem('rad.tempo') || 'null');
 } catch { /* private mode: fall through to defaults */ }
-if (THEMES.includes(storedTheme)) setTheme(storedTheme);
+setTheme(THEMES.includes(storedTheme) ? storedTheme : defaultTheme());
 
 seedGraph();
 focusNodeId = 'qm';

@@ -9,8 +9,9 @@
  */
 import { test, expect } from '@playwright/test';
 import { bootPage, CONTRAST_FN } from './lib/harness.mjs';
+import { PALETTES } from '../scripts/check-palette.mjs';
 
-const THEMES = ['dark', 'light', 'contrast'];
+const THEMES = ['radical', 'dark', 'light', 'contrast'];
 
 /* foreground token, background token, rendered px, bold?  */
 const TEXT_PAIRS = [
@@ -172,7 +173,7 @@ test('the theme choice persists and is restored on reload', async ({ page }) => 
   expect(await page.evaluate(() => currentTheme())).toBe('contrast');
 });
 
-test('with no stored choice the system preference decides', async ({ page }) => {
+test('with no stored choice and a light system preference, light wins', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await bootPage(page);
   await page.evaluate(() => { try { localStorage.removeItem('rad.theme'); } catch {} });
@@ -180,5 +181,63 @@ test('with no stored choice the system preference decides', async ({ page }) => 
   await page.waitForFunction(() => typeof store !== 'undefined');
   expect(await page.evaluate(() => currentTheme())).toBe('light');
   const bg = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--rad-page-bg').trim());
-  expect(bg.toLowerCase()).toBe('#f7f8fa');
+  expect(bg.toLowerCase()).toBe(PALETTES.light.bg);
+});
+
+test('with no stored choice and a dark system preference, radical is the default', async ({ page }) => {
+  // The mood is the default, not an opt-in — but a stated light preference is
+  // still a preference, and the test above holds it.
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await bootPage(page);
+  await page.evaluate(() => { try { localStorage.removeItem('rad.theme'); } catch {} });
+  await page.reload();
+  await page.waitForFunction(() => typeof store !== 'undefined');
+  expect(await page.evaluate(() => currentTheme())).toBe('radical');
+  const bg = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--rad-page-bg').trim());
+  expect(bg.toLowerCase(), 'a soft indigo ground, not black').toBe(PALETTES.radical.bg);
+});
+
+test('the stylesheet ships exactly the palettes the bench signed off', async ({ page }) => {
+  // scripts/check-palette.mjs is where the palettes are tuned; the stylesheet
+  // is where they are painted. Two hand-maintained copies of sixteen hex
+  // values is precisely the drift this project already had once, so the
+  // agreement is asserted rather than assumed.
+  await bootPage(page);
+  const shipped = await page.evaluate((themes) => {
+    const out = {};
+    const keys = ['bg', 'surface', 'surface-2', 'ink', 'ink-dim', 'line', 'line-strong',
+      'line-soft', 'accent', 'accent-ink', 'signal', 'leaf', 'calm', 'royal', 'gold', 'sky'];
+    for (const th of themes) {
+      setTheme(th);
+      const cs = getComputedStyle(document.documentElement);
+      out[th] = Object.fromEntries(keys.map((k) => [k, cs.getPropertyValue('--rad-' + k).trim().toLowerCase()]));
+    }
+    setTheme('radical');
+    return out;
+  }, THEMES);
+  for (const th of THEMES) {
+    expect(shipped[th], `theme "${th}" drifted from scripts/check-palette.mjs`).toEqual(PALETTES[th]);
+  }
+});
+
+test('radical keeps a soft ground and one deliberately non-neon hue', async ({ page }) => {
+  await bootPage(page);
+  const r = await page.evaluate((fn) => {
+    const C = eval(fn);
+    setTheme('radical');
+    const v = (n) => getComputedStyle(document.documentElement).getPropertyValue('--rad-' + n).trim();
+    return {
+      groundNotBlack: C.L(v('page-bg')) > 0,
+      // neon hues sit high on the canvas; amber is the warm counterweight and
+      // must still read as clearly warmer than the cyan accent
+      accentHue: v('accent'), goldHue: v('gold'),
+      panelAboveGround: C.L(v('panel-bg')) > C.L(v('page-bg')),
+    };
+  }, CONTRAST_FN);
+  expect(r.groundNotBlack, 'a soft ground, not #000 — neon needs something to sit on').toBe(true);
+  expect(r.panelAboveGround, 'panels must lift off the ground rather than sink into it').toBe(true);
+  const [ar, ag, ab] = r.accentHue.replace('#', '').match(/../g).map((h) => parseInt(h, 16));
+  const [gr, gg, gb] = r.goldHue.replace('#', '').match(/../g).map((h) => parseInt(h, 16));
+  expect(ab, 'the accent is a cool neon').toBeGreaterThan(ar);
+  expect(gr, 'gold is the warm contrast to it').toBeGreaterThan(gb);
 });

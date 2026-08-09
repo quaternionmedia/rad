@@ -1,7 +1,8 @@
-# Three themes over one token layer
+# Four themes over one token layer
 
-Colour is a token, never a literal. Dark, light and a high-contrast theme are palette swaps over a single two-tier token layer; node hues, wedge fills and the swatch ring all resolve through it. Every text pair is contrast-tested in every theme at the WCAG threshold for its rendered size, which is how the destructive wedge label stopped failing AA.
+Colour is a token, never a literal. Four themes — radical (the neon default), dark, light and a high-contrast one — are palette swaps over a single two-tier token layer; node hues, wedge fills and the swatch ring all resolve through it. radical sets the mood: a soft deep-indigo ground so the neon has something to sit on rather than vibrate against, with warm amber as the one deliberately non-neon hue. Every text pair is contrast-tested in every theme at the WCAG threshold for its rendered size, which is how the destructive wedge label stopped failing AA — it now clears it by 40%.
 
+![themes-radical.png](../media/themes-radical.png)
 ![themes-dark.png](../media/themes-dark.png)
 ![themes-light.png](../media/themes-light.png)
 ![themes-contrast.png](../media/themes-contrast.png)

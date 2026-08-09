@@ -63,11 +63,16 @@ for (const topic of TOPICS) {
       const failures = await topic.assert(c);
 
       const snap = await snapshot(page);
-      const video = topic.video ? await page.video()?.path().catch(() => null) : null;
 
       writeArtifact(topic.id, {
         id: topic.id, title: topic.title, prose: topic.prose,
-        media, video: video ?? null, snapshot: snap,
+        media, snapshot: snap,
+        // The video file is not flushed until the context closes, which is
+        // after this test body returns — so page.video().path() names a file
+        // that does not exist yet. Record the directory and let build-docs
+        // resolve it once the run is over.
+        wantsVideo: !!topic.video,
+        outputDir: testInfo.outputDir,
         failures, pageErrors: errors,
       });
 

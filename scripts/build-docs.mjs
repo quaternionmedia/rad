@@ -96,29 +96,78 @@ if (ipaMax > 1) fail(`chord IPA reached ${ipaMax}, budget 1`);
 if (ipaGesture > 1) fail(`release-select IPA reached ${ipaGesture}, budget 1`);
 if (process.exitCode) process.exit(1);
 
-/* ---------- media: ffmpeg is optional, and its absence is stated ---------- */
-let haveFfmpeg = true;
-try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); } catch { haveFfmpeg = false; }
+/* ---------- media: find ffmpeg before concluding it is absent ----------
+ * "not on PATH" is not "not installed". ffmpeg ships inside a lot of
+ * applications — kdenlive, Ardour, OBS, Blender — and a Windows install
+ * routinely leaves it off PATH entirely. Reporting it missing on that basis
+ * degrades a GIF to a still for no reason, which is the same class of mistake
+ * as reading the source instead of the artifact. Set FFMPEG_PATH to override.
+ */
+function resolveFfmpeg() {
+  const candidates = [
+    process.env.FFMPEG_PATH,
+    'ffmpeg',
+    // common bundled locations, Windows first because that is where PATH
+    // misses it; harmless no-ops elsewhere
+    'C:/Program Files/kdenlive/bin/ffmpeg.exe',
+    'C:/Program Files/Ardour8/video/harvid/ffmpeg.exe',
+    'C:/Program Files/Blender Foundation/Blender/ffmpeg.exe',
+    'C:/ffmpeg/bin/ffmpeg.exe',
+    `${process.env.LOCALAPPDATA ?? ''}/Microsoft/WinGet/Links/ffmpeg.exe`,
+    `${process.env.USERPROFILE ?? ''}/scoop/shims/ffmpeg.exe`,
+    `${process.env.ProgramData ?? ''}/chocolatey/bin/ffmpeg.exe`,
+    '/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/homebrew/bin/ffmpeg',
+  ].filter(Boolean);
+  for (const c of candidates) {
+    try {
+      const out = execFileSync(c, ['-version'], { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' });
+      return { bin: c, version: out.split('\n')[0].replace(/^ffmpeg version /, '').split(' ')[0] };
+    } catch { /* next */ }
+  }
+  return null;
+}
+const ffmpeg = resolveFfmpeg();
+const haveFfmpeg = !!ffmpeg;
+if (haveFfmpeg) console.log(`build-docs: ffmpeg ${ffmpeg.version} at ${ffmpeg.bin}`);
 const gifs = new Map();
 const notes = [];
+/** The runner writes video.webm into the test's output directory when the
+ *  context closes — after the test body has already written its artifact. */
+function findVideo(a) {
+  if (!a.outputDir || !fs.existsSync(a.outputDir)) return null;
+  const hit = fs.readdirSync(a.outputDir).find((f) => f.endsWith('.webm'));
+  return hit ? path.join(a.outputDir, hit) : null;
+}
 for (const a of arts.values()) {
-  if (!a.video) continue;
+  if (!a.wantsVideo) continue;
   if (!haveFfmpeg) {
-    notes.push(`${a.id}: ffmpeg not present, so this page shows a still rather than motion`);
+    notes.push(`${a.id}: no ffmpeg found on PATH or in the usual install locations, ` +
+               `so this page shows a still rather than motion (set FFMPEG_PATH to override)`);
     continue;
   }
-  if (!fs.existsSync(a.video)) { notes.push(`${a.id}: the runner produced no video file`); continue; }
+  const video = findVideo(a);
+  if (!video) { notes.push(`${a.id}: the runner produced no video file`); continue; }
   const gif = a.id + '.gif';
   try {
-    execFileSync('ffmpeg', ['-y', '-i', a.video, '-vf',
-      'fps=12,scale=340:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse',
+    // Crop to the band the interaction happens in before scaling. The frame
+    // is a 390x900 phone viewport and the menu occupies the middle third, so
+    // shrinking the whole thing spends most of the palette on empty canvas —
+    // 1.4 MB for a README hero. A centred crop keeps the wedges legible at
+    // 440 KB, and the expression is viewport-independent rather than a
+    // hardcoded rectangle.
+    execFileSync(ffmpeg.bin, ['-y', '-i', video, '-vf',
+      // Proportional, and free of commas on purpose: a comma inside min() is
+      // parsed as a filtergraph separator when the argv is handed straight to
+      // ffmpeg with no shell, which silently produced a still instead of a GIF.
+      'crop=iw:ih*0.47:0:ih*0.27,fps=10,scale=340:-1:flags=lanczos,' +
+      'split[a][b];[a]palettegen=max_colors=64[p];[b][p]paletteuse=dither=bayer:bayer_scale=4',
       path.join(SMEDIA, gif)], { stdio: 'ignore' });
     gifs.set(a.id, gif);
   } catch (e) {
     notes.push(`${a.id}: ffmpeg failed (${e.message.split('\n')[0]}); the page shows a still`);
   }
 }
-if (!haveFfmpeg) console.warn('build-docs: ffmpeg not found — motion topics degrade to stills (this is not a failure)');
+if (!haveFfmpeg) console.warn('build-docs: no ffmpeg found — motion topics degrade to stills (this is not a failure)');
 
 /* ---------- guide pages ---------- */
 for (const t of TOPICS) {
