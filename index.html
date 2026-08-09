@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>QM Radial Menu — graph manipulation prototype</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --surface: #14171c;
+    --ink: #e8eaed;
+    --ink-dim: #8a919c;
+    --line: #2a2f37;
+    --accent: #4f7cc9;      /* QmNavy, lifted for dark bg */
+    --accent-ink: #0b0d10;
+    --danger: #e5484d;
+    --ok: #46a758;
+    --wedge: #1c2027;
+    --wedge-stroke: #343a44;
+    --hub: #14171c;
+    --t-fast: 130ms;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+    font: 14px/1.45 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #stage { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    pointer-events: none;
+  }
+  header .title { font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+  header .sub { color: var(--ink-dim); font-size: 12px; white-space: nowrap; }
+  header .spacer { flex: 1; }
+  #hud { font: 11px ui-monospace, monospace; color: var(--ink-dim); text-align: right;
+    line-height: 1.5; white-space: nowrap; flex: 0 0 auto; }
+  #hud b { color: var(--ink); font-weight: 600; }
+  #conf-btn { white-space: nowrap; flex: 0 0 auto; }
+  #conf-btn.pass { color: var(--ok); border-color: var(--ok); }
+  #conf-btn.fail { color: var(--danger); border-color: var(--danger); }
+  #clock-chip, #q-chip, #midi-chip { white-space: nowrap; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  #clock-chip.beat { border-color: var(--accent); color: var(--accent); }
+  #q-chip.on { border-color: var(--accent); color: var(--accent); }
+  @media (max-width: 480px) {
+    header { gap: 8px; flex-wrap: wrap; }
+    header .sub { display: none; }
+    header .title { font-size: 13px; }
+    #hud { font-size: 10px; flex-basis: 100%; order: 3; }
+    button.chip { font-size: 11px; padding: 4px 8px; }
+    #hint { font-size: 11px; }
+  }
+  button.chip {
+    pointer-events: auto; cursor: pointer;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 4px; padding: 6px 12px; font: inherit; font-size: 13px;
+  }
+  button.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #conf-result { font-size: 13px; color: var(--ink-dim); pointer-events: none; }
+  #conf-result.pass { color: var(--ok); }
+  #conf-result.fail { color: var(--danger); }
+  #hint {
+    position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%);
+    color: var(--ink-dim); font-size: 12.5px; text-align: center; z-index: 5;
+    pointer-events: none; padding: 0 16px; text-wrap: balance;
+    transition: opacity 300ms ease;
+  }
+  #hint.faded { opacity: 0; }
+  #log {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+    display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto;
+    -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
+            mask-image: linear-gradient(90deg, #000 85%, transparent);
+    pointer-events: none;
+  }
+  #log .intent {
+    flex: 0 0 auto; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 4px; padding: 4px 10px; font: 12px ui-monospace, monospace;
+    color: var(--ink-dim); animation: pop 220ms ease-out;
+  }
+  #log .intent b { color: var(--accent); font-weight: 600; }
+  @keyframes pop { from { transform: translateY(8px); opacity: 0; } }
+
+  /* graph */
+  .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+  .edge.selected { stroke: var(--accent); }
+  .edge-arrow { fill: var(--line); }
+  .edge-arrow.selected { fill: var(--accent); }
+  .edge-label { fill: var(--ink-dim); font-size: 10.5px; text-anchor: middle; }
+  .edge-hit { stroke: transparent; stroke-width: 22; fill: none; cursor: pointer; }
+  .node circle.body { stroke: var(--wedge-stroke); stroke-width: 1.5; cursor: grab; }
+  .node.selected circle.body { stroke: var(--accent); stroke-width: 3; }
+  .node.ghost circle.body { stroke-dasharray: 4 4; fill-opacity: .35; }
+  .node text { fill: var(--ink); font-size: 11.5px; text-anchor: middle; pointer-events: none;
+    paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+  .node .pin { fill: var(--accent); }
+
+  /* radial menu */
+  #menu-layer { pointer-events: none; }
+  .rm-wedge path {
+    fill: var(--wedge); stroke: var(--wedge-stroke); stroke-width: 1;
+    transition: fill var(--t-fast) ease, transform var(--t-fast) ease;
+  }
+  .rm-wedge.hl path { fill: var(--accent); }
+  .rm-wedge.hl text { fill: var(--accent-ink); stroke: none; }
+  .rm-wedge.disabled path { fill: var(--surface); }
+  .rm-wedge.disabled text { fill: var(--ink-dim); opacity: .5; }
+  .rm-wedge.danger:not(.hl) text { fill: var(--danger); }
+  .rm-wedge.danger.hl path { fill: var(--danger); }
+  .rm-wedge text { fill: var(--ink); font-size: 12px; text-anchor: middle;
+    paint-order: stroke; stroke: rgba(11,13,16,.55); stroke-width: 3px; }
+  .rm-wedge .sub-caret { fill: var(--ink-dim); font-size: 10px; stroke: none; }
+  .rm-wedge.hl .sub-caret { fill: var(--accent-ink); }
+  .rm-hub { fill: var(--hub); stroke: var(--wedge-stroke); stroke-width: 1; }
+  .rm-hub-label { fill: var(--ink-dim); font-size: 11px; text-anchor: middle; }
+  .rm-root { animation: rm-in 150ms ease-out; }
+  @keyframes rm-in { from { opacity: 0; } }
+  @media (pointer: coarse) {
+    .rm-wedge text { font-size: 13.5px; }
+    .node text { font-size: 12.5px; }
+    button.chip { min-height: 44px; }        /* touch-target floor (ADR-002) */
+  }
+
+  /* ---- accessibility foundation ---- */
+  .skip {
+    position: fixed; top: -48px; left: 12px; z-index: 40;
+    background: var(--accent); color: var(--accent-ink); padding: 10px 16px;
+    border-radius: 4px; text-decoration: none; font-weight: 600;
+    transition: top 120ms ease;
+  }
+  .skip:focus-visible { top: 12px; outline: 2px solid var(--ink); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .node:focus { outline: none; }
+  .node.kfocus circle.body { stroke: var(--ok); stroke-width: 4; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (forced-colors: active) {
+    .rm-wedge path, .rm-hub, .node circle.body { forced-color-adjust: none; }
+    button.chip { border-width: 2px; }
+  }
+
+  /* ---- tour panel: the ONE menu on the page ---- */
+  #tour-panel {
+    position: fixed; z-index: 20; background: var(--surface);
+    border: 1px solid var(--line); display: flex; flex-direction: column;
+    right: 10px; top: 54px; bottom: 54px; width: 310px; border-radius: 6px;
+    transform: translateX(0); transition: transform 160ms ease, opacity 160ms ease;
+  }
+  #tour-panel.closed { transform: translateX(calc(100% + 14px)); opacity: 0; pointer-events: none; }
+  @media (max-width: 760px) {
+    #tour-panel { left: 8px; right: 8px; width: auto; top: auto; bottom: 46px; max-height: 46vh; }
+    #tour-panel.closed { transform: translateY(calc(100% + 60px)); }
+  }
+  #tour-panel .t-head {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  #tour-panel .t-head b { flex: 1; font-size: 14px; }
+  #tour-panel .t-head .prog { color: var(--ink-dim); font: 11px ui-monospace, monospace; }
+  #tour-panel .t-head button { min-width: 34px; }
+  #tour-panel .t-body { overflow-y: auto; padding: 4px 0 10px; overscroll-behavior: contain; }
+  #tour-panel h3 {
+    margin: 12px 12px 4px; font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--ink-dim); font-weight: 600;
+  }
+  #tour-panel ol { list-style: none; margin: 0; padding: 0; }
+  .step { display: flex; gap: 8px; padding: 7px 12px; align-items: flex-start; scroll-margin-top: 40px; }
+  .step + .step { border-top: 1px solid #191d23; }
+  .step .go {
+    flex: 0 0 auto; cursor: pointer; margin-top: 1px;
+    width: 30px; height: 30px; border-radius: 4px; font-size: 12px; line-height: 1;
+    background: var(--wedge); color: var(--ink); border: 1px solid var(--wedge-stroke);
+  }
+  .step.seen .go { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .step.running .go { border-color: var(--accent); color: var(--accent); }
+  .step .tx { flex: 1; min-width: 0; }
+  .step .tx b { display: block; font-size: 13px; }
+  .step .tx span { display: block; color: var(--ink-dim); font-size: 12px; line-height: 1.4; }
+  .step .tx a { color: var(--accent); text-decoration: none; }
+  @media (pointer: coarse) { .step .go { width: 44px; height: 44px; font-size: 15px; } }
+
+  /* ---- demo driver visuals ---- */
+  #finger {
+    position: fixed; z-index: 30; width: 34px; height: 34px; border-radius: 50%;
+    border: 2px solid var(--accent); background: rgba(79,124,201,.25);
+    transform: translate(-50%, -50%); pointer-events: none; opacity: 0; left: 0; top: 0;
+  }
+  .ripple {
+    position: fixed; z-index: 29; border-radius: 50%; border: 2px solid var(--accent);
+    transform: translate(-50%, -50%); pointer-events: none;
+  }
+  .spot {
+    position: fixed; z-index: 28; border: 2px solid var(--accent); border-radius: 6px;
+    pointer-events: none; box-shadow: 0 0 0 4px rgba(79,124,201,.18);
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#tour-panel">Skip to tour</a>
+<header>
+  <div>
+    <div class="title">QM radial menu</div>
+    <div class="sub" id="subtitle">graph manipulation, governed</div>
+  </div>
+  <div class="spacer"></div>
+  <div id="hud" aria-label="interaction meters"></div>
+  <button class="chip" id="tour-chip" aria-expanded="true" aria-controls="tour-panel">Tour</button>
+  <button class="chip" id="clock-chip" title="cycle internal BPM">♩120 int</button>
+  <button class="chip" id="q-chip" title="quantize commits to the clock">Q off</button>
+  <button class="chip" id="midi-chip" title="listen for external MIDI clock">MIDI</button>
+  <button class="chip" id="conf-btn" aria-live="polite">Vectors ▷</button>
+</header>
+
+<svg id="stage" role="application" aria-label="Graph canvas. Long-press or right-click for radial menu.">
+  <g id="viewport">
+    <g id="edges"></g>
+    <g id="nodes"></g>
+  </g>
+  <g id="menu-layer"></g>
+</svg>
+
+<div id="hint">Long-press / right-click for the menu · drag nodes · pinch / wheel to zoom · <b>m</b> = menu on selection · the <b>Tour</b> shows everything else</div>
+<div id="log" aria-live="polite"></div>
+
+<aside id="tour-panel" role="region" aria-label="Interactive tour">
+  <div class="t-head">
+    <b>Tour</b>
+    <span class="prog" id="tour-prog" aria-live="polite"></span>
+    <button class="chip" id="tour-close" aria-label="Close tour">×</button>
+  </div>
+  <div class="t-body" id="tour-body"></div>
+</aside>
+<div id="finger" aria-hidden="true"></div>
+
+<script>
+'use strict';
+/* ============================================================
+ * CORE — platform-free. geometry + state machine.
+ * This block has no DOM references; the conformance runner
+ * exercises exactly these functions. (Seam per the contract.)
+ * ============================================================ */
+const GEOM = { startDeg: -90, clockwise: true, r0: 36, r1: 108, longPressMs: 350, slop: 10 };
+
+function normDeg(d) { return ((d % 360) + 360) % 360; }
+function angleToIndex(thetaDeg, n, startDeg = GEOM.startDeg) {
+  const rel = normDeg(thetaDeg - startDeg);
+  return Math.round(rel / (360 / n)) % n;
+}
+function itemCenterDeg(i, n, startDeg = GEOM.startDeg) { return startDeg + i * (360 / n); }
+
+/* ---- time core (pure) ----
+ * MIDI clock = 24 ppqn 0xF8 ticks. Tempo from the median inter-tick
+ * period (robust to USB jitter). Quantization maps a wall-clock time
+ * onto a grid {phase, period}; scheduler commits at max(now, gridT). */
+const TIME = { ppqn: 24, chordGapMs: 30, burstSplitMs: 250 };
+
+function medianOf(xs) {
+  if (!xs.length) return null;
+  const s = [...xs].sort((a, b) => a - b), m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+function estimateBpm(tickTimes, ppqn = TIME.ppqn) {
+  if (tickTimes.length < 2) return null;
+  const diffs = [];
+  for (let i = 1; i < tickTimes.length; i++) diffs.push(tickTimes[i] - tickTimes[i - 1]);
+  const p = medianOf(diffs);
+  return p > 0 ? 60000 / (p * ppqn) : null;
+}
+function quantizeTime(t, phase, period, policy) {
+  if (policy === 'nearest') return phase + Math.round((t - phase) / period) * period;
+  return phase + Math.ceil((t - phase - 1e-9) / period) * period;   // 'next' (on-grid stays)
+}
+/* ---- chord core (pure) ----
+ * A CharaChorder chord arrives as a word whose inter-key gaps are
+ * machine-fast; serial typing is human-slow. Same words, same verbs —
+ * `chorded` only affects IPA accounting (a chord is one input). */
+function splitBursts(evts, splitGap = TIME.burstSplitMs) {
+  const out = [];
+  for (const e of evts) {
+    const cur = out[out.length - 1];
+    if (!cur || e.t - cur[cur.length - 1].t > splitGap) out.push([e]);
+    else cur.push(e);
+  }
+  return out;
+}
+function classifyBurst(evts, chordGap = TIME.chordGapMs) {
+  const word = evts.map(e => e.k).join('');
+  let chorded = evts.length >= 2;
+  for (let i = 1; i < evts.length; i++) if (evts[i].t - evts[i - 1].t > chordGap) chorded = false;
+  return { word, chorded };
+}
+
+/* Reducer-style machine. step(state, ev) -> { state, effects[] }
+ * ev: {type:'down'|'longpress'|'move'|'up'|'open'|'key'|'close', r, thetaDeg, key}
+ * Effects: {t:'highlight',i} {t:'commit',item} {t:'cancel'} {t:'submenu',item} {t:'back'} {t:'open'}
+ */
+function createMachine(spec) {
+  return {
+    status: 'closed',          // closed | pending | open
+    mode: null,                // 'tracking' (release-select) | 'idle' (tap-select)
+    stack: [spec],             // submenu stack; top = current MenuSpec
+    highlight: null,
+    pressIndex: null,
+    opened: false, committed: null, cancelled: false,
+  };
+}
+function mItems(s) { return s.stack[s.stack.length - 1].items; }
+
+function step(s, ev) {
+  const fx = [];
+  const items = mItems(s);
+  const n = items.length;
+  const setHl = (i) => { if (i !== s.highlight) { s.highlight = i; fx.push({ t: 'highlight', i }); } };
+  const inRing = (r) => r > GEOM.r0;
+  const outFar = (r) => r > GEOM.r1 * 1.35;
+
+  switch (ev.type) {
+    case 'open':                     // explicit open -> tap-select mode
+      s.status = 'open'; s.mode = 'idle'; s.opened = true; fx.push({ t: 'open' });
+      break;
+
+    case 'down':
+      if (s.status === 'closed') { s.status = 'pending'; break; }
+      if (s.status === 'open' && s.mode === 'idle') {
+        if (!inRing(ev.r) && ev.r <= GEOM.r0) { s.pressIndex = 'hub'; break; }
+        if (outFar(ev.r)) { close(s, fx, true); break; }
+        s.pressIndex = angleToIndex(ev.thetaDeg, n); setHl(s.pressIndex);
+      }
+      break;
+
+    case 'longpress':                // pending press matured -> release-select mode
+      if (s.status === 'pending') { s.status = 'open'; s.mode = 'tracking'; s.opened = true; fx.push({ t: 'open' }); }
+      break;
+
+    case 'move':
+      if (s.status !== 'open') break;
+      if (inRing(ev.r)) {
+        const i = angleToIndex(ev.thetaDeg, n);
+        setHl(i);
+        // drag-through submenu entry (release-select only)
+        if (s.mode === 'tracking' && ev.r > GEOM.r1 + 12 && items[i] && items[i].children) {
+          enterSub(s, fx, items[i]);
+        }
+      } else setHl(null);
+      break;
+
+    case 'up':
+      if (s.status === 'pending') { close(s, fx, true); break; }   // short press: never opened
+      if (s.status !== 'open') break;
+      if (s.mode === 'tracking') {
+        if (inRing(ev.r) && s.highlight != null) commit(s, fx, items[s.highlight]);
+        else close(s, fx, true);                                    // dead-zone release cancels
+      } else { // idle / tap-select
+        if (s.pressIndex === 'hub') { s.pressIndex = null; back(s, fx); break; }
+        if (s.pressIndex != null && inRing(ev.r) && angleToIndex(ev.thetaDeg, n) === s.pressIndex) {
+          commit(s, fx, items[s.pressIndex]);
+        }
+        s.pressIndex = null;
+      }
+      break;
+
+    case 'key':
+      if (s.status !== 'open') break;
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') setHl(s.highlight == null ? 0 : (s.highlight + 1) % n);
+      else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') setHl(s.highlight == null ? n - 1 : (s.highlight - 1 + n) % n);
+      else if (ev.key === 'Enter') { if (s.highlight != null) commit(s, fx, items[s.highlight]); }
+      else if (ev.key === 'Escape') back(s, fx);
+      break;
+
+    case 'close': close(s, fx, true); break;
+  }
+  return fx;
+
+  function enterSub(st, fx2, item) {
+    st.stack.push({ items: item.children, title: item.label });
+    st.highlight = null; st.pressIndex = null;
+    fx2.push({ t: 'submenu', item });
+  }
+  function back(st, fx2) {
+    if (st.stack.length > 1) { st.stack.pop(); st.highlight = null; fx2.push({ t: 'back' }); }
+    else close(st, fx2, true);
+  }
+  function commit(st, fx2, item) {
+    if (!item || item.enabled === false) { close(st, fx2, true); return; }
+    if (item.children) { enterSub(st, fx2, item); if (st.mode === 'tracking') st.mode = 'idle'; return; }
+    st.committed = item; st.status = 'closed';
+    fx2.push({ t: 'commit', item });
+  }
+  function close(st, fx2, cancelled) {
+    st.status = 'closed'; st.cancelled = !!cancelled; st.highlight = null;
+    fx2.push({ t: 'cancel' });
+  }
+}
+
+/* ============================================================
+ * CONFORMANCE VECTORS (inline copy of conformance/vectors.json)
+ * ============================================================ */
+const VECTORS = {
+  version: '0.2.0',
+  cases: [
+    { name: 'angle-to-index basics, N=4', n: 4, pure: [
+      { thetaDeg: -90, expectIndex: 0 }, { thetaDeg: 0, expectIndex: 1 },
+      { thetaDeg: 90, expectIndex: 2 }, { thetaDeg: 180, expectIndex: 3 },
+      { thetaDeg: -46, expectIndex: 0 }, { thetaDeg: -134, expectIndex: 0 },
+      { thetaDeg: -44, expectIndex: 1 }, { thetaDeg: 269.9, expectIndex: 0 } ] },
+    { name: 'angle-to-index wedge boundaries, N=6', n: 6, pure: [
+      { thetaDeg: -90, expectIndex: 0 }, { thetaDeg: -30, expectIndex: 1 },
+      { thetaDeg: -60.1, expectIndex: 0 }, { thetaDeg: -59.9, expectIndex: 1 },
+      { thetaDeg: 150, expectIndex: 4 } ] },
+    { name: 'release-select commit', n: 4,
+      trace: [ { type: 'down', r: 0, thetaDeg: 0 }, { type: 'longpress' },
+        { type: 'move', r: 70, thetaDeg: 0 }, { type: 'up', r: 70, thetaDeg: 0 } ],
+      expectHighlights: [1], expect: { committed: 1, cancelled: false } },
+    { name: 'release-select sweep then commit', n: 4,
+      trace: [ { type: 'down', r: 0, thetaDeg: 0 }, { type: 'longpress' },
+        { type: 'move', r: 70, thetaDeg: -90 }, { type: 'move', r: 70, thetaDeg: 0 },
+        { type: 'move', r: 72, thetaDeg: 2 }, { type: 'move', r: 70, thetaDeg: 90 },
+        { type: 'up', r: 70, thetaDeg: 90 } ],
+      expectHighlights: [0, 1, 2], expect: { committed: 2, cancelled: false } },
+    { name: 'release in dead zone cancels', n: 4,
+      trace: [ { type: 'down', r: 0, thetaDeg: 0 }, { type: 'longpress' },
+        { type: 'move', r: 80, thetaDeg: 180 }, { type: 'move', r: 20, thetaDeg: 180 },
+        { type: 'up', r: 20, thetaDeg: 180 } ],
+      expectHighlights: [3, null], expect: { committed: null, cancelled: true } },
+    { name: 'short press never opens', n: 4,
+      trace: [ { type: 'down', r: 0, thetaDeg: 0 }, { type: 'up', r: 2, thetaDeg: 0 } ],
+      expectHighlights: [], expect: { committed: null, cancelled: true, opened: false } },
+    { name: 'tap-select: open idle, hover, click commits', n: 6,
+      trace: [ { type: 'open' }, { type: 'move', r: 80, thetaDeg: -30 },
+        { type: 'move', r: 80, thetaDeg: 30 }, { type: 'down', r: 80, thetaDeg: 30 },
+        { type: 'up', r: 80, thetaDeg: 30 } ],
+      expectHighlights: [1, 2], expect: { committed: 2, cancelled: false } },
+    { name: 'tap outside cancels', n: 6,
+      trace: [ { type: 'open' }, { type: 'down', r: 300, thetaDeg: 45 },
+        { type: 'up', r: 300, thetaDeg: 45 } ],
+      expectHighlights: [], expect: { committed: null, cancelled: true } },
+    { name: 'keyboard rotate and commit', n: 5,
+      trace: [ { type: 'open' }, { type: 'key', key: 'ArrowRight' }, { type: 'key', key: 'ArrowRight' },
+        { type: 'key', key: 'ArrowLeft' }, { type: 'key', key: 'Enter' } ],
+      expectHighlights: [0, 1, 0], expect: { committed: 0, cancelled: false } },
+    { name: 'keyboard escape cancels', n: 5,
+      trace: [ { type: 'open' }, { type: 'key', key: 'ArrowLeft' }, { type: 'key', key: 'Escape' } ],
+      expectHighlights: [4], expect: { committed: null, cancelled: true } },
+    { name: 'edge-triggered highlight: jitter within one wedge fires once', n: 8,
+      trace: [ { type: 'open' }, { type: 'move', r: 80, thetaDeg: -90 },
+        { type: 'move', r: 82, thetaDeg: -88 }, { type: 'move', r: 78, thetaDeg: -92 },
+        { type: 'move', r: 80, thetaDeg: -91 } ],
+      expectHighlights: [0], expect: { committed: null, cancelled: false, stillOpen: true } },
+    { name: 'quantize next-beat', quant: [
+      { t: 1210, phase: 1000, period: 500, policy: 'next', expectT: 1500 },
+      { t: 1500, phase: 1000, period: 500, policy: 'next', expectT: 1500 },
+      { t: 1501, phase: 1000, period: 500, policy: 'next', expectT: 2000 },
+      { t: 980, phase: 1000, period: 500, policy: 'next', expectT: 1000 } ] },
+    { name: 'quantize nearest', quant: [
+      { t: 1210, phase: 1000, period: 500, policy: 'nearest', expectT: 1000 },
+      { t: 1260, phase: 1000, period: 500, policy: 'nearest', expectT: 1500 },
+      { t: 1740, phase: 1000, period: 500, policy: 'nearest', expectT: 1500 } ] },
+    { name: 'quantize next-bar (period = 4 beats)', quant: [
+      { t: 1210, phase: 1000, period: 2000, policy: 'next', expectT: 3000 } ] },
+    { name: 'tempo estimate: clean 120 bpm', tempo: { periods: Array(48).fill(20.8333), expectBpm: 120, tol: 0.05 } },
+    { name: 'tempo estimate: USB jitter, median holds', tempo: {
+      periods: [20.8, 22.1, 19.6, 20.9, 20.8, 24.0, 17.7, 20.85, 20.8, 20.9, 20.8, 20.83, 20.9, 20.8, 20.87, 20.8],
+      expectBpm: 120, tol: 1.0 } },
+    { name: 'tempo estimate: one tick is silence', tempo: { periods: [], expectBpm: null } },
+    { name: 'chord: machine-fast word is chorded', chord: {
+      evts: [ { k: 'p', t: 0 }, { k: 'i', t: 8 }, { k: 'n', t: 16 } ],
+      expectWord: 'pin', expectChorded: true } },
+    { name: 'chord: human-slow word is typed', chord: {
+      evts: [ { k: 'p', t: 0 }, { k: 'i', t: 180 }, { k: 'n', t: 420 } ],
+      expectWord: 'pin', expectChorded: false } },
+    { name: 'chord: single key is never chorded', chord: {
+      evts: [ { k: 'f', t: 0 } ], expectWord: 'f', expectChorded: false } },
+    { name: 'burst split at gap > 80ms', split: {
+      evts: [ { k: 'h', t: 0 }, { k: 'd', t: 10 }, { k: 'f', t: 300 }, { k: 'i', t: 308 }, { k: 't', t: 316 } ],
+      expectWords: ['hd', 'fit'] } },
+  ],
+};
+
+function runConformance() {
+  const results = [];
+  for (const c of VECTORS.cases) {
+    let pass = true, why = '';
+    if (c.quant) {
+      for (const q of c.quant) {
+        const got = quantizeTime(q.t, q.phase, q.period, q.policy);
+        if (Math.abs(got - q.expectT) > 1e-6) { pass = false; why = `t=${q.t} → ${got}, want ${q.expectT}`; break; }
+      }
+    } else if (c.tempo) {
+      const times = []; let t = 1000;
+      for (const p of c.tempo.periods) { times.push(t); t += p; }
+      if (c.tempo.periods.length) times.push(t);
+      const got = estimateBpm(times);
+      if (c.tempo.expectBpm === null ? got !== null : Math.abs(got - c.tempo.expectBpm) > c.tempo.tol)
+        { pass = false; why = `bpm ${got}`; }
+    } else if (c.chord) {
+      const r = classifyBurst(c.chord.evts);
+      if (r.word !== c.chord.expectWord || r.chorded !== c.chord.expectChorded)
+        { pass = false; why = `${r.word}/${r.chorded}`; }
+    } else if (c.split) {
+      const words = splitBursts(c.split.evts).map(b => b.map(e => e.k).join(''));
+      if (JSON.stringify(words) !== JSON.stringify(c.split.expectWords))
+        { pass = false; why = JSON.stringify(words); }
+    } else if (c.pure) {
+      for (const p of c.pure) {
+        const got = angleToIndex(p.thetaDeg, c.n);
+        if (got !== p.expectIndex) { pass = false; why = `θ=${p.thetaDeg} → ${got}, want ${p.expectIndex}`; break; }
+      }
+    } else {
+      const spec = { items: Array.from({ length: c.n }, (_, i) => ({ id: 'i' + i, label: 'i' + i })) };
+      const st = createMachine(spec);
+      const hl = [];
+      for (const ev of c.trace) {
+        for (const f of step(st, ev)) if (f.t === 'highlight') hl.push(f.i);
+      }
+      const e = c.expect;
+      const committedIdx = st.committed ? Number(st.committed.id.slice(1)) : null;
+      if (JSON.stringify(hl) !== JSON.stringify(c.expectHighlights)) { pass = false; why = `highlights ${JSON.stringify(hl)}`; }
+      else if (committedIdx !== e.committed) { pass = false; why = `committed ${committedIdx}`; }
+      else if (st.cancelled !== e.cancelled) { pass = false; why = `cancelled ${st.cancelled}`; }
+      else if ('opened' in e && st.opened !== e.opened) { pass = false; why = `opened ${st.opened}`; }
+      else if (e.stillOpen && st.status !== 'open') { pass = false; why = `status ${st.status}`; }
+    }
+    results.push({ name: c.name, pass, why });
+  }
+  return results;
+}
+
+/* ============================================================
+ * APP STATE — intents in, patches applied, render derived.
+ * ============================================================ */
+const store = {
+  nodes: new Map(),   // id -> {id,label,x,y,color,kind,hidden,pinned,ghost}
+  edges: [],          // {id,source,target,label}
+  selection: new Set(),
+  intents: [],
+};
+
+/* Abstraction ledger + IPA meter.
+ * L0 raw platform events · L1 recognized gestures · L2 machine transitions
+ * · L3 committed intents. IPA = discrete inputs per intent, where one
+ * input = one down..up envelope, one keystroke, or one wheel step.
+ * Budgets live in DRAFT-interaction-efficiency-metrics. */
+const meters = { l0: 0, l1: 0, l2: 0, l3: 0, inputsSinceIntent: 0, costs: [], ttcs: [], jits: [] };
+function p95(xs) {
+  if (!xs.length) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.floor(0.95 * (s.length - 1))];
+}
+function fmtMs(v) { return v == null ? '–' : (v < 10 ? v.toFixed(1) : Math.round(v)) + 'ms'; }
+function meterHud() {
+  const hud = document.getElementById('hud');
+  const avg = meters.costs.length ? (meters.costs.reduce((a, b) => a + b, 0) / meters.costs.length) : 0;
+  const last = meters.costs.length ? meters.costs[meters.costs.length - 1] : '–';
+  hud.innerHTML = `L0 ${meters.l0} · L1 ${meters.l1} · L2 ${meters.l2} · L3 ${meters.l3}<br>` +
+    `IPA last <b>${last}</b> · mean <b>${avg ? avg.toFixed(2) : '–'}</b><br>` +
+    `ttc p95 <b>${fmtMs(p95(meters.ttcs))}</b> · grid jit p95 <b>${fmtMs(p95(meters.jits))}</b>`;
+}
+
+/* ---------- clock + quantized dispatch ---------- */
+const clock = { source: 'internal', bpm: 120, running: true, phase: 0, beatPeriod: 500, ticks: [], tickCount: 0 };
+let qmode = 'off';           // off | beat | bar
+let lastInputT = null;       // DOMHighResTimeStamp of the most recent discrete input
+
+function setInternalBpm(bpm) {
+  clock.source = 'internal'; clock.bpm = bpm; clock.beatPeriod = 60000 / bpm;
+  clock.phase = performance.now(); clock.ticks = []; clock.tickCount = 0;
+  updateClockChip();
+}
+function onMidiTick(t) {
+  clock.ticks.push(t); if (clock.ticks.length > 96) clock.ticks.shift();
+  clock.tickCount++;
+  const bpm = estimateBpm(clock.ticks);
+  if (bpm && bpm > 20 && bpm < 400) { clock.bpm = bpm; clock.beatPeriod = 60000 / bpm; clock.source = 'midi'; }
+  if (clock.tickCount % TIME.ppqn === 1) clock.phase = t;   // beat boundary
+  if (clock.tickCount % TIME.ppqn === 1) updateClockChip();
+}
+function updateClockChip() {
+  const c = document.getElementById('clock-chip');
+  if (c) c.textContent = `♩${Math.round(clock.bpm)} ${clock.source === 'midi' ? 'ext' : 'int'}`;
+}
+function spinTo(t) { while (performance.now() < t - 0.05) { /* sub-ms tail */ } }
+function scheduleAt(gridT, fn) {
+  const lead = gridT - performance.now();
+  if (lead <= 2) { spinTo(gridT); fn(performance.now()); return; }
+  setTimeout(() => { spinTo(gridT); fn(performance.now()); }, Math.max(0, lead - 2));
+}
+function dispatchIntent(intent, inputT) {
+  const now = performance.now();
+  if (qmode === 'off') {
+    intent.ttc = inputT != null ? Math.max(0, now - inputT) : null;
+    if (intent.ttc != null) meters.ttcs.push(intent.ttc);
+    applyIntent(intent);
+    return;
+  }
+  const period = clock.beatPeriod * (qmode === 'bar' ? 4 : 1);
+  const gridT = quantizeTime(now, clock.phase, period, 'next');
+  scheduleAt(gridT, (actualT) => {
+    intent.grid = {
+      beat: Math.round((gridT - clock.phase) / clock.beatPeriod),
+      deltaMs: +(actualT - gridT).toFixed(2),
+      bpm: Math.round(clock.bpm * 10) / 10, src: clock.source,
+    };
+    intent.ttc = inputT != null ? Math.max(0, actualT - inputT) : null;
+    if (intent.ttc != null) meters.ttcs.push(intent.ttc);
+    meters.jits.push(Math.abs(actualT - gridT));
+    applyIntent(intent);
+  });
+}
+function beatLoop() {
+  const now = performance.now();
+  const next = quantizeTime(now + 1, clock.phase, clock.beatPeriod, 'next');
+  setTimeout(() => {
+    const c = document.getElementById('clock-chip');
+    if (c) { c.classList.add('beat'); setTimeout(() => c.classList.remove('beat'), 90); }
+    beatLoop();
+  }, Math.max(10, next - now));
+}
+async function connectMidi() {
+  const chip = document.getElementById('midi-chip');
+  if (!navigator.requestMIDIAccess) { chip.textContent = 'MIDI n/a'; return; }
+  try {
+    const acc = await navigator.requestMIDIAccess();
+    let n = 0;
+    const bind = (input) => {
+      input.onmidimessage = (m) => {
+        const b = m.data[0];
+        if (b === 0xF8) onMidiTick(m.timeStamp);
+        else if (b === 0xFA) { clock.tickCount = 0; clock.ticks = []; }
+      };
+    };
+    for (const input of acc.inputs.values()) { bind(input); n++; }
+    acc.onstatechange = (e) => { if (e.port.type === 'input' && e.port.state === 'connected') bind(e.port); };
+    chip.textContent = n ? `MIDI ✓${n}` : 'MIDI: 0 in';
+  } catch { chip.textContent = 'MIDI denied'; }
+}
+
+/* ---------- chord adapter (CharaChorder-style) ----------
+ * Chords arrive as HID keyboard words with machine-fast inter-key
+ * gaps. One burst = one L1 gesture; a chorded burst = ONE input.
+ * Verbs are the same L3 vocabulary the menu resolves to. */
+const CHORD_MAP = {
+  pin: 'pin', hd: 'hide', del: 'delete', nbr: 'select-neighbors',
+  fit: 'fit', lay: 'relayout', add: 'add-node', un: 'show-hidden',
+  sp: 'spread', cl: 'cluster', ds: 'clear-selection',
+  red: 'color:#e5484d', blu: 'color:#4f7cc9', tea: 'color:#45b3a8',
+  vio: 'color:#8e7cc3', gld: 'color:#c9a227',
+};
+const burst = { evts: [], timer: null };
+function chordKey(e) {
+  meters.l0++; meters.inputsSinceIntent++;
+  lastInputT = e.timeStamp;
+  burst.evts.push({ k: e.key.toLowerCase(), t: e.timeStamp });
+  clearTimeout(burst.timer);
+  // No chord word is a prefix of another, so an exact match finalizes
+  // immediately — chord TTC is the last keystroke, not the split window.
+  const word = burst.evts.map(x => x.k).join('');
+  const extendable = Object.keys(CHORD_MAP).some(w => w !== word && w.startsWith(word));
+  if (CHORD_MAP[word] && !extendable) finalizeBurst();
+  else burst.timer = setTimeout(finalizeBurst, TIME.burstSplitMs);
+}
+function finalizeBurst() {
+  const evts = burst.evts; burst.evts = [];
+  if (!evts.length) return;
+  meters.l1++;
+  const { word, chorded } = classifyBurst(evts);
+  const verb = CHORD_MAP[word];
+  if (!verb) {   // stray typing: refund, don't pollute IPA
+    meters.inputsSinceIntent = Math.max(0, meters.inputsSinceIntent - evts.length);
+    meterHud(); return;
+  }
+  if (chorded) meters.inputsSinceIntent = Math.max(1, meters.inputsSinceIntent - (evts.length - 1));
+  const ctx = chordContext();
+  dispatchIntent({ action: verb, context: ctx, itemId: null, via: chorded ? 'chord' : 'typed' },
+    evts[evts.length - 1].t);
+  meterHud();
+}
+function chordContext() {
+  if (store.selection.size > 1) {
+    const ids = [...store.selection];
+    return { type: 'selection', targetIds: ids, position: centroid(ids) };
+  }
+  if (store.selection.size === 1) {
+    const id = [...store.selection][0], n = store.nodes.get(id);
+    return { type: 'node', targetIds: [id], position: { x: n.x, y: n.y } };
+  }
+  return { type: 'canvas', targetIds: [], position: toWorld(VW() / 2, VH() / 2) };
+}
+
+const KIND_COLOR = { gov: '#4f7cc9', py: '#8e7cc3', web: '#45b3a8', android: '#6aa84f', new: '#c9a227' };
+const STACK = [
+  ['qm', 'gov'], ['qmcp', 'py'], ['dossier', 'py'], ['apothecary', 'py'],
+  ['alfred', 'py'], ['al-admin', 'py'], ['otto', 'py'],
+  ['codecartographer', 'web'], ['benchmark', 'web'],
+  ['qmetronome', 'android'], ['radial-menu', 'new'], ['g0', 'gov'],
+];
+const LINKS = [
+  ['qm', 'codecartographer'], ['qm', 'qmetronome'], ['qm', 'apothecary'], ['qm', 'alfred'],
+  ['qm', 'qmcp'], ['qm', 'dossier'], ['qm', 'benchmark'], ['qm', 'otto'],
+  ['alfred', 'otto'], ['alfred', 'al-admin'],
+  ['codecartographer', 'radial-menu'], ['qmetronome', 'radial-menu'],
+  ['qm', 'g0'], ['radial-menu', 'g0'], ['dossier', 'qmcp'],
+];
+
+const VW = () => document.documentElement.clientWidth || innerWidth;
+const VH = () => document.documentElement.clientHeight || innerHeight;
+
+function seedGraph() {
+  const W = VW(), H = VH(), cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.34;
+  STACK.forEach(([id, kind], i) => {
+    const a = (-90 + i * 360 / STACK.length) * Math.PI / 180;
+    store.nodes.set(id, {
+      id, label: id, kind, color: KIND_COLOR[kind],
+      x: cx + R * Math.cos(a), y: cy + R * Math.sin(a),
+      hidden: false, pinned: false, ghost: id === 'g0',
+    });
+  });
+  LINKS.forEach(([s, t], i) => store.edges.push({ id: 'e' + i, source: s, target: t, label: '' }));
+  relayout(200);
+}
+
+function relayout(iters = 120) {
+  const ns = [...store.nodes.values()].filter(n => !n.hidden);
+  const W = VW(), H = VH();
+  for (let k = 0; k < iters; k++) {
+    // repulsion
+    for (let i = 0; i < ns.length; i++) for (let j = i + 1; j < ns.length; j++) {
+      const a = ns[i], b = ns[j];
+      let dx = b.x - a.x, dy = b.y - a.y;
+      let d2 = dx * dx + dy * dy || 1; const d = Math.sqrt(d2);
+      const f = Math.min(12, 9000 / d2);
+      dx /= d; dy /= d;
+      if (!a.pinned) { a.x -= dx * f; a.y -= dy * f; }
+      if (!b.pinned) { b.x += dx * f; b.y += dy * f; }
+    }
+    // springs
+    for (const e of store.edges) {
+      const a = store.nodes.get(e.source), b = store.nodes.get(e.target);
+      if (!a || !b || a.hidden || b.hidden) continue;
+      let dx = b.x - a.x, dy = b.y - a.y;
+      const d = Math.sqrt(dx * dx + dy * dy) || 1;
+      const f = (d - 150) * 0.015; dx /= d; dy /= d;
+      if (!a.pinned) { a.x += dx * f; a.y += dy * f; }
+      if (!b.pinned) { b.x -= dx * f; b.y -= dy * f; }
+    }
+    // soft center
+    for (const n of ns) if (!n.pinned) {
+      n.x += (W / 2 - n.x) * 0.002; n.y += (H / 2 - n.y) * 0.002;
+    }
+  }
+}
+
+let nodeSeq = 0;
+function applyIntent(intent) {
+  const { action, context } = intent;
+  const ids = context.targetIds;
+  const nodesOf = () => ids.map(id => store.nodes.get(id)).filter(Boolean);
+  switch (action) {
+    case 'pin':       nodesOf().forEach(n => n.pinned = !n.pinned); break;
+    case 'hide':      nodesOf().forEach(n => { n.hidden = true; store.selection.delete(n.id); }); break;
+    case 'delete':
+      if (context.type === 'edge') store.edges = store.edges.filter(e => e.id !== ids[0]);
+      else {
+        ids.forEach(id => { store.nodes.delete(id); store.selection.delete(id); });
+        store.edges = store.edges.filter(e => store.nodes.has(e.source) && store.nodes.has(e.target));
+      }
+      break;
+    case 'select-neighbors': {
+      const id = ids[0]; store.selection.clear(); store.selection.add(id);
+      store.edges.forEach(e => {
+        if (e.source === id) store.selection.add(e.target);
+        if (e.target === id) store.selection.add(e.source);
+      });
+      break;
+    }
+    case 'reverse': { const e = store.edges.find(e => e.id === ids[0]); if (e) [e.source, e.target] = [e.target, e.source]; break; }
+    case 'edit-label': { const e = store.edges.find(e => e.id === ids[0]); if (e) { const L = ['', 'governs', 'depends', 'informs']; e.label = L[(L.indexOf(e.label) + 1) % L.length]; } break; }
+    case 'add-node': {
+      const id = 'node-' + (++nodeSeq);
+      store.nodes.set(id, { id, label: id, kind: 'new', color: KIND_COLOR.new,
+        x: context.position.x, y: context.position.y, hidden: false, pinned: false, ghost: false });
+      break;
+    }
+    case 'fit':       fitView(); break;
+    case 'relayout':  relayout(160); break;
+    case 'show-hidden': store.nodes.forEach(n => n.hidden = false); break;
+    case 'spread': {
+      const sel = nodesOf();
+      const cx = sel.reduce((s, n) => s + n.x, 0) / sel.length, cy = sel.reduce((s, n) => s + n.y, 0) / sel.length;
+      sel.forEach(n => { const dx = n.x - cx, dy = n.y - cy, d = Math.hypot(dx, dy) || 1; n.x = cx + dx / d * (d + 90); n.y = cy + dy / d * (d + 90); });
+      break;
+    }
+    case 'cluster': {
+      const sel = nodesOf();
+      const cx = sel.reduce((s, n) => s + n.x, 0) / sel.length, cy = sel.reduce((s, n) => s + n.y, 0) / sel.length;
+      sel.forEach((n, i) => { const a = (-90 + i * 360 / sel.length) * Math.PI / 180; n.x = cx + 60 * Math.cos(a); n.y = cy + 60 * Math.sin(a); n.pinned = true; });
+      break;
+    }
+    case 'clear-selection': store.selection.clear(); break;
+    case 'select':   ids.forEach(id => store.selection.add(id)); break;
+    case 'deselect': ids.forEach(id => store.selection.delete(id)); break;
+    default:
+      if (action.startsWith('color:')) nodesOf().forEach(n => n.color = action.slice(6));
+  }
+  intent.cost = meters.inputsSinceIntent;
+  meters.costs.push(intent.cost);
+  meters.inputsSinceIntent = 0;
+  meters.l3++;
+  store.intents.push(intent);
+  logIntent(intent);
+  meterHud();
+  render();
+}
+
+/* ---------- resolver: context -> MenuSpec ---------- */
+function resolveMenu(ctx) {
+  const colorSub = ['#4f7cc9', '#45b3a8', '#8e7cc3', '#c9a227', '#e5484d'].map(c => (
+    { id: 'color-' + c, label: '', swatch: c, action: 'color:' + c }));
+  if (ctx.type === 'node') {
+    const n = store.nodes.get(ctx.targetIds[0]);
+    return { title: n.label, items: [
+      { id: 'pin', label: n.pinned ? 'Unpin' : 'Pin', action: 'pin' },
+      { id: 'neighbors', label: 'Neighbors', action: 'select-neighbors' },
+      { id: 'color', label: 'Color', children: colorSub },
+      { id: 'hide', label: 'Hide', action: 'hide' },
+      { id: 'delete', label: 'Delete', action: 'delete', destructive: true },
+    ] };
+  }
+  if (ctx.type === 'edge') {
+    return { title: 'edge', items: [
+      { id: 'reverse', label: 'Reverse', action: 'reverse' },
+      { id: 'label', label: 'Label', action: 'edit-label' },
+      { id: 'delete', label: 'Delete', action: 'delete', destructive: true },
+    ] };
+  }
+  if (ctx.type === 'selection') {
+    return { title: store.selection.size + ' selected', items: [
+      { id: 'cluster', label: 'Cluster', action: 'cluster' },
+      { id: 'spread', label: 'Spread', action: 'spread' },
+      { id: 'hide', label: 'Hide', action: 'hide' },
+      { id: 'clear', label: 'Deselect', action: 'clear-selection' },
+      { id: 'delete', label: 'Delete', action: 'delete', destructive: true },
+    ] };
+  }
+  const anyHidden = [...store.nodes.values()].some(n => n.hidden);
+  return { title: 'canvas', items: [
+    { id: 'add', label: 'Add node', action: 'add-node' },
+    { id: 'fit', label: 'Fit', action: 'fit' },
+    { id: 'relayout', label: 'Layout', action: 'relayout' },
+    { id: 'show', label: 'Unhide', action: 'show-hidden', enabled: anyHidden },
+  ] };
+}
+
+/* ============================================================
+ * DOM LAYER — SVG rendering + pointer/keyboard adapters
+ * ============================================================ */
+const svg = document.getElementById('stage');
+const gView = document.getElementById('viewport');
+const gEdges = document.getElementById('edges');
+const gNodes = document.getElementById('nodes');
+const gMenu = document.getElementById('menu-layer');
+const SVGNS = 'http://www.w3.org/2000/svg';
+const el = (t, attrs = {}) => { const e = document.createElementNS(SVGNS, t); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+
+let view = { x: 0, y: 0, k: 1 };  // pan/zoom
+function applyView() { gView.setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.k})`); }
+function toWorld(px, py) { return { x: (px - view.x) / view.k, y: (py - view.y) / view.k }; }
+
+function fitView() {
+  const ns = [...store.nodes.values()].filter(n => !n.hidden);
+  if (!ns.length) return;
+  const pad = 70;
+  const minX = Math.min(...ns.map(n => n.x)) - pad, maxX = Math.max(...ns.map(n => n.x)) + pad;
+  const minY = Math.min(...ns.map(n => n.y)) - pad, maxY = Math.max(...ns.map(n => n.y)) + pad;
+  const k = Math.min(VW() / (maxX - minX), (VH() - 120) / (maxY - minY), 1.6);
+  view = { k, x: VW() / 2 - k * (minX + maxX) / 2, y: VH() / 2 - k * (minY + maxY) / 2 };
+  applyView();
+}
+
+function render() {
+  gEdges.textContent = ''; gNodes.textContent = '';
+  for (const e of store.edges) {
+    const a = store.nodes.get(e.source), b = store.nodes.get(e.target);
+    if (!a || !b || a.hidden || b.hidden) continue;
+    const sel = store.selection.has(a.id) && store.selection.has(b.id);
+    const line = el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'edge' + (sel ? ' selected' : '') });
+    gEdges.appendChild(line);
+    // arrowhead
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
+    const tx = b.x - dx / d * 26, ty = b.y - dy / d * 26;
+    const ang = Math.atan2(dy, dx);
+    const p = (o) => `${tx - 9 * Math.cos(ang - o)},${ty - 9 * Math.sin(ang - o)}`;
+    gEdges.appendChild(el('polygon', { points: `${tx},${ty} ${p(0.42)} ${p(-0.42)}`, class: 'edge-arrow' + (sel ? ' selected' : '') }));
+    if (e.label) {
+      const t = el('text', { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 6, class: 'edge-label' });
+      t.textContent = e.label; gEdges.appendChild(t);
+    }
+    const hit = el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'edge-hit', 'data-edge': e.id });
+    gEdges.appendChild(hit);
+  }
+  for (const n of store.nodes.values()) {
+    if (n.hidden) continue;
+    const g = el('g', {
+      class: 'node' + (store.selection.has(n.id) ? ' selected' : '') + (n.ghost ? ' ghost' : '') + (n.id === focusNodeId ? ' kfocus' : ''),
+      'data-node': n.id, transform: `translate(${n.x},${n.y})`,
+      tabindex: n.id === focusNodeId ? '0' : '-1', role: 'button',
+      'aria-label': `node ${n.label}${store.selection.has(n.id) ? ', selected' : ''}`,
+    });
+    g.appendChild(el('circle', { class: 'body', r: 19, fill: n.color, 'fill-opacity': 0.85 }));
+    if (n.pinned) g.appendChild(el('circle', { class: 'pin', r: 3.5, cx: 13, cy: -13 }));
+    const t = el('text', { y: 34 }); t.textContent = n.label; g.appendChild(t);
+    gNodes.appendChild(g);
+  }
+}
+
+/* ---------- intent log ---------- */
+const logEl = document.getElementById('log');
+function logIntent(it) {
+  const d = document.createElement('div');
+  d.className = 'intent';
+  d.innerHTML = `<b>${it.action}</b> · ${it.context.type}${it.context.targetIds.length ? ' [' + it.context.targetIds.join(',') + ']' : ''}`
+    + (it.cost != null ? ' · ' + it.cost + '⊙' : '')
+    + (it.via === 'chord' ? ' · ⚡' : it.via === 'typed' ? ' · ⌨' : '')
+    + (it.grid ? ` · @b${it.grid.beat}${it.grid.deltaMs >= 0 ? '+' : ''}${it.grid.deltaMs}ms` : '');
+  logEl.prepend(d);
+  while (logEl.children.length > 12) logEl.lastChild.remove();
+}
+
+/* ---------- radial menu view ---------- */
+const menu = { active: null };  // {machine, ctx, cx, cy, group}
+
+function clampCenter(x, y) {
+  const m = GEOM.r1 + 24;
+  return { x: Math.min(Math.max(x, m), VW() - m), y: Math.min(Math.max(y, Math.max(m, 64)), VH() - m - 40) };
+}
+
+function openMenu(ctx, screenX, screenY, mode) {
+  document.getElementById('hint').classList.add('faded');
+  closeMenu();
+  const spec = resolveMenu(ctx);
+  const { x, y } = clampCenter(screenX, screenY);
+  const machine = createMachine(spec);
+  menu.active = { machine, ctx, cx: x, cy: y, group: null };
+  if (mode === 'idle') feed({ type: 'open' });
+  else { machine.status = 'pending'; feed({ type: 'longpress' }); }
+  svg.setAttribute('aria-label', 'Radial menu open: ' + (spec.title || ctx.type));
+}
+
+function feed(ev) {
+  const a = menu.active; if (!a) return;
+  const fx = step(a.machine, ev);
+  meters.l2 += fx.length;
+  for (const f of fx) {
+    if (f.t === 'highlight') {
+      if (navigator.vibrate && f.i != null) navigator.vibrate(8);
+      drawMenu();
+      announce(f.i != null ? mItems(a.machine)[f.i].label : '');
+    }
+    if (f.t === 'open' || f.t === 'submenu' || f.t === 'back') drawMenu();
+    if (f.t === 'commit') {
+      const item = f.item;
+      gMenu.textContent = ''; const done = menu.active; menu.active = null;
+      dispatchIntent({ action: item.action, context: done.ctx, itemId: item.id }, lastInputT);
+    }
+    if (f.t === 'cancel') closeMenu();
+  }
+}
+
+function announce(text) {
+  // lightweight live region for screen readers
+  let lr = document.getElementById('sr-live');
+  if (!lr) { lr = document.createElement('div'); lr.id = 'sr-live'; lr.setAttribute('aria-live', 'polite');
+    lr.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)'; document.body.appendChild(lr); }
+  lr.textContent = text;
+}
+
+function arcPath(cx, cy, r0, r1, a0, a1) {
+  const p = (r, a) => [cx + r * Math.cos(a * Math.PI / 180), cy + r * Math.sin(a * Math.PI / 180)];
+  const [x0, y0] = p(r1, a0), [x1, y1] = p(r1, a1), [x2, y2] = p(r0, a1), [x3, y3] = p(r0, a0);
+  const large = (a1 - a0) > 180 ? 1 : 0;
+  return `M${x0},${y0} A${r1},${r1} 0 ${large} 1 ${x1},${y1} L${x2},${y2} A${r0},${r0} 0 ${large} 0 ${x3},${y3} Z`;
+}
+
+function drawMenu() {
+  const a = menu.active; if (!a) { gMenu.textContent = ''; return; }
+  gMenu.textContent = '';
+  const items = mItems(a.machine), n = items.length, half = 180 / n;
+  const root = el('g', { class: 'rm-root', role: 'menu', 'aria-label': a.machine.stack[a.machine.stack.length - 1].title || 'menu' });
+  items.forEach((item, i) => {
+    const c = itemCenterDeg(i, n);
+    const g = el('g', { class: 'rm-wedge' + (a.machine.highlight === i ? ' hl' : '') + (item.enabled === false ? ' disabled' : '') + (item.destructive ? ' danger' : ''), role: 'menuitem', 'aria-label': item.label || item.id });
+    const grow = a.machine.highlight === i ? 8 : 0;
+    g.appendChild(el('path', { d: arcPath(a.cx, a.cy, GEOM.r0 + 3, GEOM.r1 + grow, c - half + 1.2, c + half - 1.2) }));
+    const rm = (GEOM.r0 + GEOM.r1) / 2 + grow / 2;
+    const tx = a.cx + rm * Math.cos(c * Math.PI / 180), ty = a.cy + rm * Math.sin(c * Math.PI / 180);
+    if (item.swatch) {
+      g.appendChild(el('circle', { cx: tx, cy: ty, r: 11, fill: item.swatch, stroke: '#0b0d10', 'stroke-width': 2 }));
+    } else {
+      const t = el('text', { x: tx, y: ty, dy: '0.35em' }); t.textContent = item.label; g.appendChild(t);
+      if (item.children) { const ct = el('text', { x: tx, y: ty + 15, dy: '0.35em', class: 'sub-caret' }); ct.textContent = '▸ more'; g.appendChild(ct); }
+    }
+    root.appendChild(g);
+  });
+  const hub = el('circle', { class: 'rm-hub', cx: a.cx, cy: a.cy, r: GEOM.r0 - 2 });
+  root.appendChild(hub);
+  const hl = el('text', { class: 'rm-hub-label', x: a.cx, y: a.cy, dy: '0.35em' });
+  hl.textContent = a.machine.stack.length > 1 ? '←' : (a.machine.stack[0].title || '').slice(0, 9);
+  root.appendChild(hl);
+  gMenu.appendChild(root);
+}
+
+function closeMenu() {
+  menu.active = null; gMenu.textContent = '';
+  svg.setAttribute('aria-label', 'Graph canvas. Long-press or right-click for radial menu.');
+}
+
+/* ---------- pointer adapter ---------- */
+const pointers = new Map();
+let gesture = null;  // {kind:'node'|'pan'|'menu'|'pinch', ...}
+let lpTimer = null;
+
+function polarFromMenu(px, py) {
+  const a = menu.active;
+  const dx = px - a.cx, dy = py - a.cy;
+  return { r: Math.hypot(dx, dy), thetaDeg: Math.atan2(dy, dx) * 180 / Math.PI };
+}
+
+function contextAt(target, px, py) {
+  const nodeEl = target.closest ? target.closest('[data-node]') : null;
+  const edgeEl = target.closest ? target.closest('[data-edge]') : null;
+  const w = toWorld(px, py);
+  if (nodeEl) {
+    const id = nodeEl.getAttribute('data-node');
+    if (store.selection.has(id) && store.selection.size > 1)
+      return { type: 'selection', targetIds: [...store.selection], position: w };
+    return { type: 'node', targetIds: [id], position: w };
+  }
+  if (edgeEl) return { type: 'edge', targetIds: [edgeEl.getAttribute('data-edge')], position: w };
+  return { type: 'canvas', targetIds: [], position: w };
+}
+
+svg.addEventListener('pointerdown', (e) => {
+  meters.l0++; meters.inputsSinceIntent++;
+  lastInputT = e.timeStamp;
+  svg.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (menu.active) {
+    const { r, thetaDeg } = polarFromMenu(e.clientX, e.clientY);
+    feed({ type: 'down', r, thetaDeg });
+    return;
+  }
+  if (pointers.size === 2) {   // pinch start
+    meters.l1++;
+    clearTimeout(lpTimer); lpTimer = null;
+    const [p1, p2] = [...pointers.values()];
+    gesture = { kind: 'pinch', d0: Math.hypot(p2.x - p1.x, p2.y - p1.y), k0: view.k, cx: (p1.x + p2.x) / 2, cy: (p1.y + p2.y) / 2, v0: { ...view } };
+    return;
+  }
+  const ctx = contextAt(e.target, e.clientX, e.clientY);
+  const nodeId = ctx.type === 'node' ? ctx.targetIds[0] : null;
+  gesture = { kind: nodeId ? 'node' : 'pan', id: nodeId, sx: e.clientX, sy: e.clientY, moved: false,
+    v0: { ...view }, n0: nodeId ? { ...store.nodes.get(nodeId) } : null, ctx };
+  // long-press → release-select menu
+  if (e.pointerType !== 'mouse' || e.button === 0) {
+    lpTimer = setTimeout(() => {
+      lpTimer = null;
+      if (gesture && !gesture.moved) {
+        meters.l1++; meterHud();
+        const c = gesture.ctx.type === 'node' || gesture.ctx.type === 'selection'
+          ? nodeScreenPos(gesture.ctx) : { x: e.clientX, y: e.clientY };
+        gesture = null;
+        openMenu(ctx, c.x, c.y, 'tracking');
+        if (navigator.vibrate) navigator.vibrate(15);
+      }
+    }, GEOM.longPressMs);
+  }
+});
+
+function nodeScreenPos(ctx) {
+  const n = store.nodes.get(ctx.targetIds[0]);
+  return n ? { x: n.x * view.k + view.x, y: n.y * view.k + view.y } : { x: innerWidth / 2, y: innerHeight / 2 };
+}
+
+svg.addEventListener('pointermove', (e) => {
+  meters.l0++;
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (menu.active) {
+    const { r, thetaDeg } = polarFromMenu(e.clientX, e.clientY);
+    feed({ type: 'move', r, thetaDeg });
+    return;
+  }
+  if (!gesture) return;
+
+  if (gesture.kind === 'pinch' && pointers.size >= 2) {
+    const [p1, p2] = [...pointers.values()];
+    const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    const k = Math.min(3, Math.max(0.3, gesture.k0 * d / gesture.d0));
+    view.k = k;
+    view.x = gesture.cx - (gesture.cx - gesture.v0.x) * (k / gesture.k0);
+    view.y = gesture.cy - (gesture.cy - gesture.v0.y) * (k / gesture.k0);
+    applyView(); return;
+  }
+  const dx = e.clientX - gesture.sx, dy = e.clientY - gesture.sy;
+  if (!gesture.moved && Math.hypot(dx, dy) > GEOM.slop) { gesture.moved = true; clearTimeout(lpTimer); lpTimer = null; }
+  if (!gesture.moved) return;
+
+  if (gesture.kind === 'node') {
+    const n = store.nodes.get(gesture.id);
+    if (n) { n.x = gesture.n0.x + dx / view.k; n.y = gesture.n0.y + dy / view.k; render(); }
+  } else if (gesture.kind === 'pan') {
+    view.x = gesture.v0.x + dx; view.y = gesture.v0.y + dy; applyView();
+  }
+});
+
+svg.addEventListener('pointerup', (e) => {
+  meters.l0++; meters.l1++;   // every down..up envelope resolves to one gesture
+  lastInputT = e.timeStamp;
+  pointers.delete(e.pointerId);
+  clearTimeout(lpTimer); lpTimer = null;
+
+  if (menu.active) {
+    const { r, thetaDeg } = polarFromMenu(e.clientX, e.clientY);
+    feed({ type: 'up', r, thetaDeg });
+    meterHud();
+    return;
+  }
+  if (!gesture) { meterHud(); return; }
+  const w = toWorld(e.clientX, e.clientY);
+  if (!gesture.moved && gesture.kind === 'node') {          // tap = selection intent
+    const id = gesture.id;
+    applyIntent({ action: store.selection.has(id) ? 'deselect' : 'select',
+      context: { type: 'node', targetIds: [id], position: w }, itemId: null });
+  } else if (!gesture.moved && gesture.kind === 'pan') {    // tap empty = clear selection
+    if (store.selection.size)
+      applyIntent({ action: 'clear-selection', context: { type: 'canvas', targetIds: [], position: w }, itemId: null });
+  }
+  gesture = null;
+  meterHud();
+});
+svg.addEventListener('pointercancel', (e) => { pointers.delete(e.pointerId); clearTimeout(lpTimer); lpTimer = null; gesture = null; if (menu.active) feed({ type: 'close' }); });
+
+svg.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  meters.l0++; meters.l1++;
+  clearTimeout(lpTimer); lpTimer = null; gesture = null;
+  openMenu(contextAt(e.target, e.clientX, e.clientY), e.clientX, e.clientY, 'idle');
+  meterHud();
+});
+
+svg.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const k = Math.min(3, Math.max(0.3, view.k * (e.deltaY < 0 ? 1.12 : 0.89)));
+  view.x = e.clientX - (e.clientX - view.x) * (k / view.k);
+  view.y = e.clientY - (e.clientY - view.y) * (k / view.k);
+  view.k = k; applyView();
+}, { passive: false });
+
+/* ---------- keyboard adapter ---------- */
+addEventListener('keydown', (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  if (menu.active && e.key === 'Tab') { e.preventDefault(); return; }   // focus trap (ADR-003)
+  // roving node focus: arrows walk the graph, Enter opens the menu there
+  if (!menu.active && document.activeElement?.hasAttribute?.('data-node')) {
+    const dirs = { ArrowRight: 0, ArrowDown: 90, ArrowLeft: 180, ArrowUp: -90 };
+    if (e.key in dirs) {
+      e.preventDefault();
+      meters.l0++; meters.l1++;
+      focusNode(nearestNode(focusNodeId, dirs[e.key]));
+      render();
+      focusNode(focusNodeId);
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      meters.l0++; meters.l1++; meters.inputsSinceIntent++;
+      lastInputT = e.timeStamp;
+      const n = store.nodes.get(focusNodeId);
+      const p = { x: n.x * view.k + view.x, y: n.y * view.k + view.y };
+      openMenu({ type: 'node', targetIds: [n.id], position: { x: n.x, y: n.y } }, p.x, p.y, 'idle');
+      meterHud();
+      return;
+    }
+  }
+  if (menu.active) {
+    if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(e.key)) {
+      e.preventDefault();
+      meters.l0++; meters.l1++; meters.inputsSinceIntent++;
+      lastInputT = e.timeStamp;
+      feed({ type: 'key', key: e.key });
+      meterHud();
+    }
+    return;
+  }
+  if (e.key !== 'm' && e.key !== 'M' && e.key.length === 1 && /[a-z]/i.test(e.key)) {
+    chordKey(e);   // chord/typed-word adapter (CharaChorder path); 'm' is reserved
+    return;
+  }
+  if (e.key === 'm' || e.key === 'M') {
+    meters.l0++; meters.l1++; meters.inputsSinceIntent++;
+    lastInputT = e.timeStamp;
+    let ctx;
+    if (store.selection.size > 1) ctx = { type: 'selection', targetIds: [...store.selection], position: centroid([...store.selection]) };
+    else if (store.selection.size === 1) { const id = [...store.selection][0]; ctx = { type: 'node', targetIds: [id], position: { ...store.nodes.get(id) } }; }
+    else ctx = { type: 'canvas', targetIds: [], position: toWorld(innerWidth / 2, innerHeight / 2) };
+    const p = ctx.targetIds.length ? nodeScreenPos(ctx) : { x: innerWidth / 2, y: innerHeight / 2 };
+    openMenu(ctx, p.x, p.y, 'idle');
+  }
+});
+function centroid(ids) {
+  const ns = ids.map(id => store.nodes.get(id)).filter(Boolean);
+  return { x: ns.reduce((s, n) => s + n.x, 0) / ns.length, y: ns.reduce((s, n) => s + n.y, 0) / ns.length };
+}
+
+/* ---------- conformance UI ---------- */
+document.getElementById('conf-btn').addEventListener('click', (e) => {
+  const res = runConformance();
+  const passed = res.filter(r => r.pass).length;
+  const btn = e.currentTarget;
+  btn.textContent = `${passed}/${res.length} vectors ${passed === res.length ? '✓' : '✗'} v${VECTORS.version}`;
+  btn.classList.toggle('pass', passed === res.length);
+  btn.classList.toggle('fail', passed !== res.length);
+  res.filter(r => !r.pass).forEach(r => console.warn('FAIL', r.name, '—', r.why));
+});
+
+/* ---------- boot ---------- */
+/* ============================================================
+ * MOTION — every animation on the page lives here, named and
+ * documented (benchmark animations.js convention). The API is
+ * shaped like anime.js ({targets → el, duration, complete}) so a
+ * swap to the vendored library is mechanical, but each motion is
+ * compositor-only (transform/opacity) and capped at 240 ms:
+ * speed first, choreography second. Honors prefers-reduced-motion
+ * by jumping straight to end states.
+ * ============================================================ */
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motion = {
+  D: { tap: 90, move: 170, ring: 200, spot: 220, max: 240 },
+  raf(el, ms, fn, done) {                       // core tween loop
+    if (REDUCED || ms <= 0) { fn(1); done && done(); return; }
+    const t0 = performance.now();
+    (function loop(t) {
+      const k = Math.min(1, (t - t0) / ms);
+      fn(1 - (1 - k) * (1 - k));                // easeOutQuad
+      if (k < 1) requestAnimationFrame(loop); else done && done();
+    })(t0);
+  },
+  /** finger(points, msPerLeg) — glide the ghost finger through screen points. */
+  finger(points, msPerLeg = motion.D.move) {
+    const f = document.getElementById('finger');
+    return new Promise((res) => {
+      f.style.opacity = '1';
+      let i = 0;
+      const leg = () => {
+        if (i >= points.length) { res(); return; }
+        const from = i === 0 ? points[0] : points[i - 1], to = points[i]; i++;
+        motion.raf(f, i === 1 ? 0 : msPerLeg, (k) => {
+          f.style.left = from.x + (to.x - from.x) * k + 'px';
+          f.style.top = from.y + (to.y - from.y) * k + 'px';
+        }, leg);
+      };
+      leg();
+    });
+  },
+  fingerHide() { document.getElementById('finger').style.opacity = '0'; },
+  /** ripple(x, y) — tap indicator at a screen point. */
+  ripple(x, y) {
+    const r = document.createElement('div');
+    r.className = 'ripple'; r.style.left = x + 'px'; r.style.top = y + 'px';
+    document.body.appendChild(r);
+    motion.raf(r, motion.D.ring, (k) => {
+      const d = 10 + 40 * k;
+      r.style.width = r.style.height = d + 'px'; r.style.opacity = String(1 - k);
+    }, () => r.remove());
+  },
+  /** spotlight(el) — pulse an outline around any DOM element twice. */
+  spotlight(el) {
+    if (!el) return;
+    const b = el.getBoundingClientRect();
+    const s = document.createElement('div');
+    s.className = 'spot';
+    s.style.cssText += `left:${b.left - 5}px;top:${b.top - 5}px;width:${b.width + 10}px;height:${b.height + 10}px`;
+    document.body.appendChild(s);
+    motion.raf(s, motion.D.spot * 2, (k) => { s.style.opacity = String(k < 0.5 ? 1 : 2 - 2 * k); },
+      () => s.remove());
+  },
+};
+
+/* ============================================================
+ * DEMO DRIVER — "show, don't tell". Each helper narrates itself
+ * through the ghost finger, then drives the SAME seam real input
+ * adapters use (openMenu/feed/dispatchIntent/chord burst), so a
+ * demo is an execution of the product path, not a movie of one.
+ * ============================================================ */
+const demo = {
+  busy: false,
+  screenOf(id) { const n = store.nodes.get(id); return { x: n.x * view.k + view.x, y: n.y * view.k + view.y }; },
+  sleep: (ms) => new Promise((r) => setTimeout(r, REDUCED ? 0 : ms)),
+  async longPressNode(id) {
+    const p = this.screenOf(id);
+    await motion.finger([p]);
+    motion.ripple(p.x, p.y);
+    await this.sleep(320);
+    meters.inputsSinceIntent++;              // the demo press is one honest input
+    lastInputT = performance.now();
+    openMenu(contextAt(document.querySelector(`[data-node="${id}"]`) ?? svg, p.x, p.y), p.x, p.y, 'tracking');
+    if (navigator.vibrate) navigator.vibrate(15);
+    return p;
+  },
+  async sweep(deg, r = 76) {
+    const a = menu.active; if (!a) return;
+    const to = { x: a.cx + r * Math.cos(deg * Math.PI / 180), y: a.cy + r * Math.sin(deg * Math.PI / 180) };
+    await motion.finger([to]);
+    feed({ type: 'move', r, thetaDeg: deg });
+    await this.sleep(220);
+    return to;
+  },
+  async release(deg, r = 76) {
+    lastInputT = performance.now();
+    feed({ type: 'up', r, thetaDeg: deg });
+    motion.fingerHide();
+  },
+  async tapNode(id) {
+    const p = this.screenOf(id);
+    await motion.finger([p]); motion.ripple(p.x, p.y);
+    meters.inputsSinceIntent++;              // one tap, one input
+    lastInputT = performance.now();
+    applyIntent({ action: store.selection.has(id) ? 'deselect' : 'select',
+      context: { type: 'node', targetIds: [id], position: { ...store.nodes.get(id) } }, itemId: null });
+    await this.sleep(160); motion.fingerHide();
+  },
+  async chord(word) {
+    // Inject a machine-fast burst through the real chord pipeline.
+    announce('chord: ' + word);
+    const t0 = performance.now();
+    word.split('').forEach((k, i) => {
+      meters.l0++; meters.inputsSinceIntent++;
+      burst.evts.push({ k, t: t0 + i * 6 });
+    });
+    lastInputT = t0 + (word.length - 1) * 6;
+    clearTimeout(burst.timer);
+    finalizeBurst();
+    motion.spotlight(document.getElementById('log'));
+  },
+  async spotChip(id) { const el = document.getElementById(id); motion.spotlight(el); await this.sleep(240); return el; },
+};
+
+/* ============================================================
+ * TOUR — the page's one menu: a linked list of actions that run
+ * themselves. Each step is addressable (#t-<id>), is marked seen
+ * once shown, and leaves the feature armed for you to try.
+ * ============================================================ */
+const TOUR = [
+  { ch: 'Orient', steps: [
+    { id: 'graph', label: 'This graph is live', desc: 'A small map of the quaternionmedia stack. Drag nodes, drag the background to pan, pinch or scroll to zoom.',
+      run: async () => { const p = demo.screenOf('qm'); await motion.finger([{ x: p.x - 60, y: p.y - 60 }, p]); motion.ripple(p.x, p.y); await demo.sleep(200); motion.fingerHide(); } },
+    { id: 'intents', label: 'Everything is an intent', desc: 'Every action — even selecting — lands in the log strip below with its input cost (⊙). Nothing mutates the graph except intents.',
+      run: async () => { await demo.tapNode('dossier'); motion.spotlight(document.getElementById('log')); await demo.sleep(300); await demo.tapNode('dossier'); } },
+    { id: 'meters', label: 'The meters are the contract', desc: 'Top right: raw events (L0) → gestures (L1) → machine transitions (L2) → intents (L3), plus inputs-per-action and latency percentiles. Budgets live in the governed records.',
+      run: async () => { motion.spotlight(document.getElementById('hud')); await demo.sleep(400); } },
+  ]},
+  { ch: 'The menu', steps: [
+    { id: 'open', label: 'Open it anywhere', desc: 'Long-press (touch) or right-click (pointer) a node, an edge, or empty canvas — the menu is context-aware.',
+      run: async () => { await demo.longPressNode('qm'); await demo.sleep(500); feed({ type: 'close' }); motion.fingerHide(); } },
+    { id: 'release-select', label: 'One gesture, one action', desc: 'Keep the finger down: drag onto a wedge and release to commit. A full verb costs one input.',
+      run: async () => { await demo.longPressNode('qm'); await demo.sweep(0); await demo.release(0); } },
+    { id: 'submenu', label: 'Submenus, still one gesture', desc: 'Drag through the outer rim on a parented wedge (Color) and the ring is replaced in place. Release on a swatch.',
+      run: async () => { await demo.longPressNode('alfred'); await demo.sweep(45); await demo.sweep(45, 130); await demo.sleep(200); await demo.sweep(-90, 76); await demo.release(-90); } },
+    { id: 'cancel', label: 'Bail out anytime', desc: 'Release in the hub, tap outside, or press Escape — the dead zone is a first-class cancel affordance, not an error.',
+      run: async () => { await demo.longPressNode('otto'); await demo.sweep(180); await demo.sweep(180, 10); await demo.release(180, 10); } },
+  ]},
+  { ch: 'Keyboard & access', steps: [
+    { id: 'kbd-menu', label: 'Full keyboard path', desc: 'm opens the menu on the selection (or canvas), arrows rotate the highlight, Enter commits, Escape backs out. No pointer required, ever.',
+      run: async () => {
+        openMenu({ type: 'canvas', targetIds: [], position: toWorld(VW() / 2, VH() / 2) }, VW() / 2, VH() / 2, 'idle');
+        for (const k of ['ArrowRight', 'ArrowRight']) { feed({ type: 'key', key: k }); await demo.sleep(260); }
+        lastInputT = performance.now(); feed({ type: 'key', key: 'Enter' });
+      } },
+    { id: 'kbd-focus', label: 'Focus walks the graph', desc: 'Tab into the canvas, then arrow keys move node focus geometrically (green ring); Enter opens the menu right there. Screen readers hear each node.',
+      run: async () => { focusNode('qm'); await demo.sleep(300); focusNode(nearestNode('qm', 0)); await demo.sleep(300); focusNode(nearestNode(focusNodeId, 90)); await demo.sleep(200); } },
+    { id: 'calm', label: 'Calm by preference', desc: 'prefers-reduced-motion collapses every animation to its end state — including this tour’s ghost finger. Contrast, touch-target, and forced-colors rules are in the stylesheet, not an afterthought.',
+      run: async () => { motion.spotlight(document.querySelector('.t-head')); announce(REDUCED ? 'Reduced motion is ON — demos jump to results.' : 'Reduced motion is honored when your system requests it.'); await demo.sleep(300); } },
+  ]},
+  { ch: 'Chords — expert speed', steps: [
+    { id: 'chord-what', label: 'Words as single acts', desc: 'A CharaChorder (or any fast chorded input) emits a whole word in one press over plain HID. The vocabulary is prefix-free, so a known word commits on its last keystroke — zero recognition delay.',
+      run: async () => { await demo.tapNode('qmcp'); await demo.chord('pin'); } },
+    { id: 'chord-verbs', label: 'Same verbs, no menu', desc: 'Chords bind to the identical intent vocabulary the menu resolves — pin, hd, del, nbr, fit, lay, add, sp, cl, un, ds, and colors red blu tea vio gld. IPA is 1 for any verb at any depth.',
+      run: async () => { await demo.chord('gld'); await demo.sleep(250); await demo.chord('nbr'); } },
+    { id: 'chord-typed', label: 'Typing still works', desc: 'The same word typed slowly resolves too, flagged ⌨ at its honest cost. Experts get the floor; everyone gets the vocabulary.',
+      run: async () => { motion.spotlight(document.getElementById('log')); announce('Try typing n-b-r slowly with a node selected.'); await demo.sleep(300); } },
+  ]},
+  { ch: 'On the clock', steps: [
+    { id: 'clock', label: 'A clock lives here', desc: 'The ♩ chip is an internal metronome (tap to cycle BPM). The MIDI chip listens for external MIDI clock — 24 ppqn, median-filtered tempo, phase locked per beat.',
+      run: async () => { await demo.spotChip('clock-chip'); await demo.spotChip('midi-chip'); } },
+    { id: 'quantize', label: 'Commit on the beat', desc: 'With Q on, intents wait for the grid and land stamped @beat+delta. Measured jitter here is well under a millisecond — graph edits as performance.',
+      run: async () => {
+        if (qmode === 'off') document.getElementById('q-chip').click();
+        await demo.spotChip('q-chip');
+        await demo.tapNode('benchmark'); await demo.chord('vio');
+        await demo.sleep(700);
+        if (qmode !== 'off') { document.getElementById('q-chip').click(); if (qmode !== 'off') document.getElementById('q-chip').click(); }
+      } },
+  ]},
+  { ch: 'Under the hood', steps: [
+    { id: 'vectors', label: 'The spec runs in-page', desc: 'The pure core (geometry, state machine, quantizer, tempo, chords) replays the conformance vectors on demand. Ports to Android or iOS are judged by the same file.',
+      run: async () => { document.getElementById('conf-btn').click(); await demo.spotChip('conf-btn'); } },
+    { id: 'records', label: 'Governed, not vibed', desc: 'The interaction contract, metric budgets, and platform plans are drafts in <a href="https://github.com/quaternionmedia" target="_blank" rel="noopener">docs/records</a>; this page, its docs, and its media regenerate from one topic registry on every CI run.',
+      run: async () => { motion.spotlight(document.getElementById('hud')); announce('Numbers on this page are measurements, not copy.'); await demo.sleep(300); } },
+  ]},
+];
+
+const tourState = { seen: new Set(), open: true };
+function tourProgress() {
+  const total = TOUR.reduce((n, c) => n + c.steps.length, 0);
+  document.getElementById('tour-prog').textContent = `${tourState.seen.size}/${total} shown`;
+}
+function buildTour() {
+  const body = document.getElementById('tour-body');
+  body.innerHTML = '';
+  for (const ch of TOUR) {
+    const h = document.createElement('h3'); h.textContent = ch.ch; body.appendChild(h);
+    const ol = document.createElement('ol');
+    for (const s of ch.steps) {
+      const li = document.createElement('li');
+      li.className = 'step'; li.id = 't-' + s.id;
+      li.innerHTML = `<button class="go" aria-label="Show: ${s.label}">▶</button>` +
+        `<div class="tx"><b>${s.label}</b><span>${s.desc}</span></div>`;
+      li.querySelector('.go').addEventListener('click', () => runStep(s, li));
+      ol.appendChild(li);
+    }
+    body.appendChild(ol);
+  }
+  tourProgress();
+}
+async function runStep(s, li) {
+  if (demo.busy) return;
+  demo.busy = true;
+  li.classList.add('running');
+  history.replaceState(null, '', '#t-' + s.id);
+  announce('Showing: ' + s.label);
+  try { await s.run(); } catch (e) { console.warn('demo step failed', s.id, e); }
+  motion.fingerHide();
+  li.classList.remove('running');
+  li.classList.add('seen');
+  tourState.seen.add(s.id);
+  tourProgress();
+  demo.busy = false;
+}
+function setTour(open) {
+  tourState.open = open;
+  document.getElementById('tour-panel').classList.toggle('closed', !open);
+  document.getElementById('tour-chip').setAttribute('aria-expanded', String(open));
+}
+
+/* ---------- roving node focus (keyboard graph navigation) ---------- */
+let focusNodeId = null;
+function focusNode(id) {
+  focusNodeId = id;
+  document.querySelectorAll('.node.kfocus').forEach((n) => n.classList.remove('kfocus'));
+  const el = document.querySelector(`[data-node="${id}"]`);
+  if (el) { el.classList.add('kfocus'); el.setAttribute('tabindex', '0'); el.focus({ preventScroll: true }); }
+  const n = store.nodes.get(id);
+  if (n) announce(`${n.label}${n.pinned ? ', pinned' : ''}${store.selection.has(id) ? ', selected' : ''}`);
+}
+function nearestNode(fromId, dirDeg) {
+  const from = store.nodes.get(fromId); if (!from) return fromId;
+  let best = null, bestScore = Infinity;
+  for (const n of store.nodes.values()) {
+    if (n.id === fromId || n.hidden) continue;
+    const ang = Math.atan2(n.y - from.y, n.x - from.x) * 180 / Math.PI;
+    const dAng = Math.abs(((ang - dirDeg + 540) % 360) - 180);
+    if (dAng > 60) continue;
+    const dist = Math.hypot(n.x - from.x, n.y - from.y);
+    const score = dist * (1 + dAng / 60);
+    if (score < bestScore) { bestScore = score; best = n.id; }
+  }
+  return best ?? fromId;
+}
+
+document.getElementById('clock-chip').addEventListener('click', () => {
+  const seq = [90, 120, 140, 160];
+  setInternalBpm(seq[(seq.indexOf(Math.round(clock.bpm)) + 1) % seq.length] || 120);
+});
+document.getElementById('q-chip').addEventListener('click', (e) => {
+  qmode = qmode === 'off' ? 'beat' : qmode === 'beat' ? 'bar' : 'off';
+  e.currentTarget.textContent = 'Q ' + qmode;
+  e.currentTarget.classList.toggle('on', qmode !== 'off');
+});
+document.getElementById('midi-chip').addEventListener('click', connectMidi);
+
+document.getElementById('tour-chip').addEventListener('click', () => setTour(!tourState.open));
+document.getElementById('tour-close').addEventListener('click', () => setTour(false));
+
+document.getElementById('subtitle').textContent =
+  `graph manipulation, governed · contract v${VECTORS.version}`;   // derived, never copied
+seedGraph();
+focusNodeId = 'qm';
+render();
+fitView();
+setInternalBpm(120);
+beatLoop();
+meterHud();
+buildTour();
+setTour(true);
+if (location.hash.startsWith('#t-')) {
+  const li = document.getElementById(location.hash.slice(1));
+  if (li) { li.scrollIntoView({ block: 'center' }); li.querySelector('.go').focus(); }
+}
+addEventListener('resize', () => { if (!menu.active) fitView(); });
+</script>
+</body>
+</html>

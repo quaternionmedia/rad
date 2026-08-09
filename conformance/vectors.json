@@ -1,0 +1,195 @@
+{
+  "version": "0.2.0",
+  "geometry": { "startDeg": -90, "clockwise": true, "r0": 36, "r1": 108, "longPressMs": 350, "slop": 10 },
+  "time": { "ppqn": 24, "chordGapMs": 30, "burstSplitMs": 250 },
+  "notes": "Traces are polar, relative to menu center. r in density-independent units. thetaDeg uses screen convention where -90 is up. 'expectHighlights' is the edge-triggered sequence of item indices (null = none). v0.2.0 adds pure suites: quant (quantizeTime), tempo (estimateBpm over 24ppqn ticks, median period), chord (classifyBurst), split (splitBursts).",
+  "cases": [
+    {
+      "name": "angle-to-index basics, N=4",
+      "n": 4,
+      "pure": [
+        { "thetaDeg": -90, "expectIndex": 0 },
+        { "thetaDeg": 0, "expectIndex": 1 },
+        { "thetaDeg": 90, "expectIndex": 2 },
+        { "thetaDeg": 180, "expectIndex": 3 },
+        { "thetaDeg": -46, "expectIndex": 0 },
+        { "thetaDeg": -134, "expectIndex": 0 },
+        { "thetaDeg": -44, "expectIndex": 1 },
+        { "thetaDeg": 269.9, "expectIndex": 0 }
+      ]
+    },
+    {
+      "name": "angle-to-index wedge boundaries, N=6",
+      "n": 6,
+      "pure": [
+        { "thetaDeg": -90, "expectIndex": 0 },
+        { "thetaDeg": -30, "expectIndex": 1 },
+        { "thetaDeg": -60.1, "expectIndex": 0 },
+        { "thetaDeg": -59.9, "expectIndex": 1 },
+        { "thetaDeg": 150, "expectIndex": 4 }
+      ]
+    },
+    {
+      "name": "release-select commit",
+      "n": 4,
+      "trace": [
+        { "t": 0, "type": "down", "r": 0, "thetaDeg": 0 },
+        { "t": 350, "type": "longpress" },
+        { "t": 420, "type": "move", "r": 70, "thetaDeg": 0 },
+        { "t": 500, "type": "up", "r": 70, "thetaDeg": 0 }
+      ],
+      "expectHighlights": [1],
+      "expect": { "committed": 1, "cancelled": false }
+    },
+    {
+      "name": "release-select sweep then commit",
+      "n": 4,
+      "trace": [
+        { "t": 0, "type": "down", "r": 0, "thetaDeg": 0 },
+        { "t": 350, "type": "longpress" },
+        { "t": 400, "type": "move", "r": 70, "thetaDeg": -90 },
+        { "t": 450, "type": "move", "r": 70, "thetaDeg": 0 },
+        { "t": 470, "type": "move", "r": 72, "thetaDeg": 2 },
+        { "t": 500, "type": "move", "r": 70, "thetaDeg": 90 },
+        { "t": 560, "type": "up", "r": 70, "thetaDeg": 90 }
+      ],
+      "expectHighlights": [0, 1, 2],
+      "expect": { "committed": 2, "cancelled": false }
+    },
+    {
+      "name": "release in dead zone cancels",
+      "n": 4,
+      "trace": [
+        { "t": 0, "type": "down", "r": 0, "thetaDeg": 0 },
+        { "t": 350, "type": "longpress" },
+        { "t": 400, "type": "move", "r": 80, "thetaDeg": 180 },
+        { "t": 450, "type": "move", "r": 20, "thetaDeg": 180 },
+        { "t": 500, "type": "up", "r": 20, "thetaDeg": 180 }
+      ],
+      "expectHighlights": [3, null],
+      "expect": { "committed": null, "cancelled": true }
+    },
+    {
+      "name": "short press never opens",
+      "n": 4,
+      "trace": [
+        { "t": 0, "type": "down", "r": 0, "thetaDeg": 0 },
+        { "t": 200, "type": "up", "r": 2, "thetaDeg": 0 }
+      ],
+      "expectHighlights": [],
+      "expect": { "committed": null, "cancelled": true, "opened": false }
+    },
+    {
+      "name": "tap-select: open idle, hover, click commits",
+      "n": 6,
+      "trace": [
+        { "t": 0, "type": "open" },
+        { "t": 100, "type": "move", "r": 80, "thetaDeg": -30 },
+        { "t": 200, "type": "move", "r": 80, "thetaDeg": 30 },
+        { "t": 300, "type": "down", "r": 80, "thetaDeg": 30 },
+        { "t": 360, "type": "up", "r": 80, "thetaDeg": 30 }
+      ],
+      "expectHighlights": [1, 2],
+      "expect": { "committed": 2, "cancelled": false }
+    },
+    {
+      "name": "tap outside cancels",
+      "n": 6,
+      "trace": [
+        { "t": 0, "type": "open" },
+        { "t": 200, "type": "down", "r": 300, "thetaDeg": 45 },
+        { "t": 260, "type": "up", "r": 300, "thetaDeg": 45 }
+      ],
+      "expectHighlights": [],
+      "expect": { "committed": null, "cancelled": true }
+    },
+    {
+      "name": "keyboard rotate and commit",
+      "n": 5,
+      "trace": [
+        { "t": 0, "type": "open" },
+        { "t": 100, "type": "key", "key": "ArrowRight" },
+        { "t": 200, "type": "key", "key": "ArrowRight" },
+        { "t": 300, "type": "key", "key": "ArrowLeft" },
+        { "t": 400, "type": "key", "key": "Enter" }
+      ],
+      "expectHighlights": [0, 1, 0],
+      "expect": { "committed": 0, "cancelled": false }
+    },
+    {
+      "name": "keyboard escape cancels",
+      "n": 5,
+      "trace": [
+        { "t": 0, "type": "open" },
+        { "t": 100, "type": "key", "key": "ArrowLeft" },
+        { "t": 200, "type": "key", "key": "Escape" }
+      ],
+      "expectHighlights": [4],
+      "expect": { "committed": null, "cancelled": true }
+    },
+    {
+      "name": "edge-triggered highlight: jitter within one wedge fires once",
+      "n": 8,
+      "trace": [
+        { "t": 0, "type": "open" },
+        { "t": 100, "type": "move", "r": 80, "thetaDeg": -90 },
+        { "t": 120, "type": "move", "r": 82, "thetaDeg": -88 },
+        { "t": 140, "type": "move", "r": 78, "thetaDeg": -92 },
+        { "t": 160, "type": "move", "r": 80, "thetaDeg": -91 }
+      ],
+      "expectHighlights": [0],
+      "expect": { "committed": null, "cancelled": false, "stillOpen": true }
+    },
+    {
+      "name": "quantize next-beat",
+      "quant": [
+        { "t": 1210, "phase": 1000, "period": 500, "policy": "next", "expectT": 1500 },
+        { "t": 1500, "phase": 1000, "period": 500, "policy": "next", "expectT": 1500 },
+        { "t": 1501, "phase": 1000, "period": 500, "policy": "next", "expectT": 2000 },
+        { "t": 980, "phase": 1000, "period": 500, "policy": "next", "expectT": 1000 }
+      ]
+    },
+    {
+      "name": "quantize nearest",
+      "quant": [
+        { "t": 1210, "phase": 1000, "period": 500, "policy": "nearest", "expectT": 1000 },
+        { "t": 1260, "phase": 1000, "period": 500, "policy": "nearest", "expectT": 1500 },
+        { "t": 1740, "phase": 1000, "period": 500, "policy": "nearest", "expectT": 1500 }
+      ]
+    },
+    {
+      "name": "quantize next-bar (period = 4 beats)",
+      "quant": [
+        { "t": 1210, "phase": 1000, "period": 2000, "policy": "next", "expectT": 3000 }
+      ]
+    },
+    {
+      "name": "tempo estimate: clean 120 bpm",
+      "tempo": { "periods": [20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333, 20.8333], "expectBpm": 120, "tol": 0.05 }
+    },
+    {
+      "name": "tempo estimate: USB jitter, median holds",
+      "tempo": { "periods": [20.8, 22.1, 19.6, 20.9, 20.8, 24.0, 17.7, 20.85, 20.8, 20.9, 20.8, 20.83, 20.9, 20.8, 20.87, 20.8], "expectBpm": 120, "tol": 1.0 }
+    },
+    {
+      "name": "tempo estimate: one tick is silence",
+      "tempo": { "periods": [], "expectBpm": null }
+    },
+    {
+      "name": "chord: machine-fast word is chorded",
+      "chord": { "evts": [{ "k": "p", "t": 0 }, { "k": "i", "t": 8 }, { "k": "n", "t": 16 }], "expectWord": "pin", "expectChorded": true }
+    },
+    {
+      "name": "chord: human-slow word is typed",
+      "chord": { "evts": [{ "k": "p", "t": 0 }, { "k": "i", "t": 180 }, { "k": "n", "t": 420 }], "expectWord": "pin", "expectChorded": false }
+    },
+    {
+      "name": "chord: single key is never chorded",
+      "chord": { "evts": [{ "k": "f", "t": 0 }], "expectWord": "f", "expectChorded": false }
+    },
+    {
+      "name": "burst split at gap > 80ms",
+      "split": { "evts": [{ "k": "h", "t": 0 }, { "k": "d", "t": 10 }, { "k": "f", "t": 300 }, { "k": "i", "t": 308 }, { "k": "t", "t": 316 }], "expectWords": ["hd", "fit"] }
+    }
+  ]
+}
