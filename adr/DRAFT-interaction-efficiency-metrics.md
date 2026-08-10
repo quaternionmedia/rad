@@ -1,10 +1,11 @@
 # DRAFT — Interaction efficiency metrics (IPA, abstraction ledger, systemization index)
 
-| Status | Draft |
+| | |
 |---|---|
-| Date | 2026-08-08 |
-| Pends on | DRAFT-radial-menu-interaction-contract |
-| Principle | P6 decisions documented; P9 minimal legible deliverables |
+| **Status** | Draft |
+| **Date** | 2026-08-09 |
+| **Pends on** | the *rad interaction contract* draft |
+| **Principle** | P6 decisions documented; P9 minimal legible deliverables |
 
 ## Context
 

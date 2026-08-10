@@ -1,4 +1,5 @@
 node_modules/
-.playwright/
 test-results/
+test-results-timing/
 playwright-report/
+docs/.staging/

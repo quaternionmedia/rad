@@ -1,10 +1,10 @@
 # DRAFT — Unified artifact pipeline (tests = docs = README = media)
 
-| Status | Draft — proposed as an ORG record candidate |
+| | |
 |---|---|
-| Date | 2026-08-08 |
-| Pends on | version-tags-are-claims; P6 decisions documented; P9 minimal legible deliverables |
-| Precedent | qmetronome TutorialTopic pipeline (first instance); radial-menu topics harness (second instance) |
+| **Status** | Draft |
+| **Date** | 2026-08-09 |
+| **Pends on** | version-tags-are-claims; P6 decisions documented; P9 minimal legible deliverables |
 
 ## Context
 
@@ -16,7 +16,7 @@ qmetronome demonstrated the countermeasure: one `TutorialTopic` registry feeds
 the in-app help (rendering the *live* composable), the generated user guide,
 and the screenshot/video tests — with the topic id doubling as the media
 filename, and Roborazzi set to re-record on every ordinary test run into a
-tracked docs directory. radial-menu has now reproduced the pattern in a second
+tracked docs directory. rad has now reproduced the pattern in a second
 stack (Playwright/Node): `tests/topics.mjs` + `tests/run.mjs`. Two instances,
 per the second-data-point rule, is a record.
 
@@ -91,7 +91,7 @@ replaceability test. IPA discipline applies to the pipeline itself: one edit
 ## Revision triggers
 
 - A third harness implementation lands (Compose/Roborazzi port for the
-  radial-menu Android module) — ratify as org record with the schema frozen.
+  rad Android module) — ratify as org record with the schema frozen.
 - Registry prose needs audience variants (user guide vs. reference) — decide
   whether the schema grows fields or the pattern splits.
 - Media churn makes repositories unwieldy (consider generated-artifact

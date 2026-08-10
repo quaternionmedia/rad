@@ -3,25 +3,188 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>QM Radial Menu — graph manipulation prototype</title>
+<title>rad — QM's default radial menu</title>
 <style>
+  /* ============================================================
+   * THEME TOKENS — the only place a colour literal may appear.
+   * Two tiers, per the rad theme tokens record:
+   *   palette tokens  (--rad-*)        named for what they ARE
+   *   role tokens     (--rad-<part>-*) named for what they DO
+   * Components reference ROLE tokens only. A theme redefines the
+   * palette and inherits every role; overriding a role is allowed
+   * but shows up in the diff, which is the point.
+   * Every text pair here is asserted in tests/theme.spec.mjs at the
+   * WCAG threshold for its rendered size, in every theme.
+   * ============================================================ */
+  :root, [data-theme="radical"] {
+    /* radical — the default. A soft deep indigo ground rather than black, so
+       the neon has something to sit on instead of vibrating against it; warm
+       amber (--rad-gold) is deliberately the one non-neon hue, because a
+       palette where everything glows reads as noise. */
+    color-scheme: dark;
+    --rad-bg: #14111f;
+    --rad-surface: #1d1930;
+    --rad-surface-2: #262041;
+    --rad-ink: #f4eeff;
+    --rad-ink-dim: #bdb2d9;
+    --rad-line: #3b3358;
+    --rad-line-strong: #9186c9;
+    --rad-line-soft: #241f3c;
+    --rad-accent: #5cf0ff;
+    --rad-accent-ink: #0a0716;
+    --rad-signal: #ff7aa8;
+    --rad-leaf: #6ef2a0;
+    --rad-calm: #4ae3d0;
+    --rad-royal: #bd93ff;
+    --rad-gold: #ffc861;
+    --rad-sky: #5cf0ff;
+    --rad-shadow: 20, 17, 31;
+    --rad-accent-rgb: 92, 240, 255;
+  }
+  [data-theme="dark"] {
+    /* dark — the quiet one. Same neon family, pulled back: lower chroma
+       accents on a blue-black ground for long sessions. */
+    color-scheme: dark;
+    --rad-bg: #0d0f16;
+    --rad-surface: #161a24;
+    --rad-surface-2: #1f2430;
+    --rad-ink: #eaeef7;
+    --rad-ink-dim: #a3adc2;
+    --rad-line: #2c3342;
+    --rad-line-strong: #7f8ba5;
+    --rad-line-soft: #1a1f29;
+    --rad-accent: #56d8ff;
+    --rad-accent-ink: #06080d;
+    --rad-signal: #ff7d94;
+    --rad-leaf: #6ee89a;
+    --rad-calm: #4fd8c4;
+    --rad-royal: #b39bff;
+    --rad-gold: #f0c35c;
+    --rad-sky: #56d8ff;
+    --rad-shadow: 13, 15, 22;
+    --rad-accent-rgb: 86, 216, 255;
+  }
+  [data-theme="light"] {
+    /* light — neon does not survive a white background at 4.5:1, so these
+       are the same hues taken down in luminance rather than a different
+       palette. Soft off-white ground, never pure white. */
+    color-scheme: light;
+    --rad-bg: #f6f4fb;
+    --rad-surface: #ffffff;
+    --rad-surface-2: #eae7f4;
+    --rad-ink: #16131f;
+    --rad-ink-dim: #514a63;
+    --rad-line: #cbc5da;
+    --rad-line-strong: #6b6383;
+    --rad-line-soft: #e0dcec;
+    --rad-accent: #0060a8;
+    --rad-accent-ink: #ffffff;
+    --rad-signal: #b01248;
+    --rad-leaf: #12703f;
+    --rad-calm: #0d6b64;
+    --rad-royal: #5b34b0;
+    --rad-gold: #74540a;
+    --rad-sky: #0060a8;
+    --rad-shadow: 246, 244, 251;
+    --rad-accent-rgb: 0, 96, 168;
+  }
+  [data-theme="contrast"] {
+    /* contrast — AAA. Neon at high luminance on true black; every text pair
+       clears 7:1 and no decorative transparency survives. */
+    color-scheme: dark;
+    --rad-bg: #000000;
+    --rad-surface: #000000;
+    --rad-surface-2: #000000;
+    --rad-ink: #ffffff;
+    --rad-ink-dim: #f0f0f0;
+    --rad-line: #ffffff;
+    --rad-line-strong: #ffffff;
+    --rad-line-soft: #ffffff;
+    --rad-accent: #7df9ff;
+    --rad-accent-ink: #000000;
+    --rad-signal: #ffa3bd;
+    --rad-leaf: #8dffb0;
+    --rad-calm: #6ff5e4;
+    --rad-royal: #d6b8ff;
+    --rad-gold: #ffd977;
+    --rad-sky: #7df9ff;
+    --rad-shadow: 0, 0, 0;
+    --rad-accent-rgb: 125, 249, 255;
+  }
+  /* System preference decides only when no explicit choice is stored. The
+     default is radical; a reader whose system asks for light gets light. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme]) {
+    /* light — neon does not survive a white background at 4.5:1, so these
+       are the same hues taken down in luminance rather than a different
+       palette. Soft off-white ground, never pure white. */
+    color-scheme: light;
+    --rad-bg: #f6f4fb;
+    --rad-surface: #ffffff;
+    --rad-surface-2: #eae7f4;
+    --rad-ink: #16131f;
+    --rad-ink-dim: #514a63;
+    --rad-line: #cbc5da;
+    --rad-line-strong: #6b6383;
+    --rad-line-soft: #e0dcec;
+    --rad-accent: #0060a8;
+    --rad-accent-ink: #ffffff;
+    --rad-signal: #b01248;
+    --rad-leaf: #12703f;
+    --rad-calm: #0d6b64;
+    --rad-royal: #5b34b0;
+    --rad-gold: #74540a;
+    --rad-sky: #0060a8;
+    --rad-shadow: 246, 244, 251;
+    --rad-accent-rgb: 0, 96, 168;
+    }
+  }
   :root {
-    --bg: #0b0d10;
-    --surface: #14171c;
-    --ink: #e8eaed;
-    --ink-dim: #8a919c;
-    --line: #2a2f37;
-    --accent: #4f7cc9;      /* QmNavy, lifted for dark bg */
-    --accent-ink: #0b0d10;
-    --danger: #e5484d;
-    --ok: #46a758;
-    --wedge: #1c2027;
-    --wedge-stroke: #343a44;
-    --hub: #14171c;
-    --t-fast: 130ms;
+    /* -- roles: every component reads these, never the palette -- */
+    --rad-page-bg: var(--rad-bg);
+    --rad-panel-bg: var(--rad-surface);
+    --rad-panel-line: var(--rad-line);
+    --rad-text: var(--rad-ink);
+    --rad-text-dim: var(--rad-ink-dim);
+
+    --rad-wedge-fill: var(--rad-surface-2);
+    --rad-wedge-fill-hl: var(--rad-accent);
+    --rad-wedge-stroke: var(--rad-line-strong);
+    --rad-wedge-label: var(--rad-ink);
+    --rad-wedge-label-hl: var(--rad-accent-ink);
+    --rad-wedge-label-danger: var(--rad-signal);
+    --rad-hub-fill: var(--rad-surface);
+    --rad-hub-stroke: var(--rad-line-strong);
+    --rad-hub-label: var(--rad-ink-dim);
+
+    --rad-edge: var(--rad-line);
+    --rad-edge-selected: var(--rad-accent);
+    --rad-node-stroke: var(--rad-line-strong);
+    --rad-node-stroke-selected: var(--rad-accent);
+    --rad-node-label: var(--rad-ink);
+    --rad-focus-ring: var(--rad-accent);
+    --rad-kfocus-ring: var(--rad-leaf);
+    --rad-ok: var(--rad-leaf);
+    --rad-danger: var(--rad-signal);
+
+    /* graph-kind hues, read from CSS by the renderer so themes own them */
+    --rad-kind-gov: var(--rad-accent);
+    --rad-kind-py: var(--rad-royal);
+    --rad-kind-web: var(--rad-calm);
+    --rad-kind-android: var(--rad-leaf);
+    --rad-kind-new: var(--rad-gold);
+
+    /* swatch tokens — the values `color:<token>` intents resolve to */
+    --rad-swatch-sky: var(--rad-sky);
+    --rad-swatch-calm: var(--rad-calm);
+    --rad-swatch-royal: var(--rad-royal);
+    --rad-swatch-gold: var(--rad-gold);
+    --rad-swatch-signal: var(--rad-signal);
+
+    --rad-t-fast: 130ms;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--rad-page-bg); color: var(--rad-text);
     font: 14px/1.45 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
     user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   #stage { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
@@ -31,17 +194,17 @@
     pointer-events: none;
   }
   header .title { font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
-  header .sub { color: var(--ink-dim); font-size: 12px; white-space: nowrap; }
+  header .sub { color: var(--rad-text-dim); font-size: 12px; white-space: nowrap; }
   header .spacer { flex: 1; }
-  #hud { font: 11px ui-monospace, monospace; color: var(--ink-dim); text-align: right;
+  #hud { font: 11px ui-monospace, monospace; color: var(--rad-text-dim); text-align: right;
     line-height: 1.5; white-space: nowrap; flex: 0 0 auto; }
-  #hud b { color: var(--ink); font-weight: 600; }
+  #hud b { color: var(--rad-text); font-weight: 600; }
   #conf-btn { white-space: nowrap; flex: 0 0 auto; }
-  #conf-btn.pass { color: var(--ok); border-color: var(--ok); }
-  #conf-btn.fail { color: var(--danger); border-color: var(--danger); }
+  #conf-btn.pass { color: var(--rad-ok); border-color: var(--rad-ok); }
+  #conf-btn.fail { color: var(--rad-danger); border-color: var(--rad-danger); }
   #clock-chip, #q-chip, #midi-chip { white-space: nowrap; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-  #clock-chip.beat { border-color: var(--accent); color: var(--accent); }
-  #q-chip.on { border-color: var(--accent); color: var(--accent); }
+  #clock-chip.beat { border-color: var(--rad-accent); color: var(--rad-accent); }
+  #q-chip.on { border-color: var(--rad-accent); color: var(--rad-accent); }
   @media (max-width: 480px) {
     header { gap: 8px; flex-wrap: wrap; }
     header .sub { display: none; }
@@ -52,16 +215,16 @@
   }
   button.chip {
     pointer-events: auto; cursor: pointer;
-    background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+    background: var(--rad-panel-bg); color: var(--rad-text); border: 1px solid var(--rad-panel-line);
     border-radius: 4px; padding: 6px 12px; font: inherit; font-size: 13px;
   }
-  button.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  #conf-result { font-size: 13px; color: var(--ink-dim); pointer-events: none; }
-  #conf-result.pass { color: var(--ok); }
-  #conf-result.fail { color: var(--danger); }
+  button.chip:focus-visible { outline: 2px solid var(--rad-accent); outline-offset: 2px; }
+  #conf-result { font-size: 13px; color: var(--rad-text-dim); pointer-events: none; }
+  #conf-result.pass { color: var(--rad-ok); }
+  #conf-result.fail { color: var(--rad-danger); }
   #hint {
     position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%);
-    color: var(--ink-dim); font-size: 12.5px; text-align: center; z-index: 5;
+    color: var(--rad-text-dim); font-size: 12.5px; text-align: center; z-index: 5;
     pointer-events: none; padding: 0 16px; text-wrap: balance;
     transition: opacity 300ms ease;
   }
@@ -69,69 +232,74 @@
   #log {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
     display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto;
-    -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
-            mask-image: linear-gradient(90deg, #000 85%, transparent);
+    /* alpha mask: only the gradient's opacity is read, so currentColor keeps
+       the token rule intact without changing what is painted. */
+    -webkit-mask-image: linear-gradient(90deg, currentColor 85%, transparent);
+            mask-image: linear-gradient(90deg, currentColor 85%, transparent);
     pointer-events: none;
   }
   #log .intent {
-    flex: 0 0 auto; background: var(--surface); border: 1px solid var(--line);
+    flex: 0 0 auto; background: var(--rad-panel-bg); border: 1px solid var(--rad-panel-line);
     border-radius: 4px; padding: 4px 10px; font: 12px ui-monospace, monospace;
-    color: var(--ink-dim); animation: pop 220ms ease-out;
+    color: var(--rad-text-dim); animation: pop 220ms ease-out;
   }
-  #log .intent b { color: var(--accent); font-weight: 600; }
+  #log .intent b { color: var(--rad-accent); font-weight: 600; }
   @keyframes pop { from { transform: translateY(8px); opacity: 0; } }
 
   /* graph */
-  .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
-  .edge.selected { stroke: var(--accent); }
-  .edge-arrow { fill: var(--line); }
-  .edge-arrow.selected { fill: var(--accent); }
-  .edge-label { fill: var(--ink-dim); font-size: 10.5px; text-anchor: middle; }
+  .edge { stroke: var(--rad-panel-line); stroke-width: 1.5; fill: none; }
+  .edge.selected { stroke: var(--rad-accent); }
+  .edge-arrow { fill: var(--rad-panel-line); }
+  .edge-arrow.selected { fill: var(--rad-accent); }
+  .edge-label { fill: var(--rad-text-dim); font-size: 10.5px; text-anchor: middle; }
   .edge-hit { stroke: transparent; stroke-width: 22; fill: none; cursor: pointer; }
-  .node circle.body { stroke: var(--wedge-stroke); stroke-width: 1.5; cursor: grab; }
-  .node.selected circle.body { stroke: var(--accent); stroke-width: 3; }
+  .node circle.body { stroke: var(--rad-wedge-stroke); stroke-width: 1.5; cursor: grab; }
+  .node.selected circle.body { stroke: var(--rad-accent); stroke-width: 3; }
   .node.ghost circle.body { stroke-dasharray: 4 4; fill-opacity: .35; }
-  .node text { fill: var(--ink); font-size: 11.5px; text-anchor: middle; pointer-events: none;
-    paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
-  .node .pin { fill: var(--accent); }
+  .node text { fill: var(--rad-text); font-size: 11.5px; text-anchor: middle; pointer-events: none;
+    paint-order: stroke; stroke: var(--rad-page-bg); stroke-width: 3px; }
+  .node .pin { fill: var(--rad-accent); }
 
   /* radial menu */
   #menu-layer { pointer-events: none; }
   .rm-wedge path {
-    fill: var(--wedge); stroke: var(--wedge-stroke); stroke-width: 1;
-    transition: fill var(--t-fast) ease, transform var(--t-fast) ease;
+    fill: var(--rad-wedge-fill); stroke: var(--rad-wedge-stroke); stroke-width: 1;
+    transition: fill var(--rad-t-fast) ease, transform var(--rad-t-fast) ease;
   }
-  .rm-wedge.hl path { fill: var(--accent); }
-  .rm-wedge.hl text { fill: var(--accent-ink); stroke: none; }
-  .rm-wedge.disabled path { fill: var(--surface); }
-  .rm-wedge.disabled text { fill: var(--ink-dim); opacity: .5; }
-  .rm-wedge.danger:not(.hl) text { fill: var(--danger); }
-  .rm-wedge.danger.hl path { fill: var(--danger); }
-  .rm-wedge text { fill: var(--ink); font-size: 12px; text-anchor: middle;
-    paint-order: stroke; stroke: rgba(11,13,16,.55); stroke-width: 3px; }
-  .rm-wedge .sub-caret { fill: var(--ink-dim); font-size: 10px; stroke: none; }
-  .rm-wedge.hl .sub-caret { fill: var(--accent-ink); }
-  .rm-hub { fill: var(--hub); stroke: var(--wedge-stroke); stroke-width: 1; }
-  .rm-hub-label { fill: var(--ink-dim); font-size: 11px; text-anchor: middle; }
+  .rm-wedge.hl path { fill: var(--rad-accent); }
+  .rm-wedge.hl text { fill: var(--rad-accent-ink); stroke: none; }
+  .rm-wedge.disabled path { fill: var(--rad-panel-bg); }
+  .rm-wedge.disabled text { fill: var(--rad-text-dim); opacity: .5; }
+  .rm-wedge.danger:not(.hl) text { fill: var(--rad-danger); }
+  .rm-wedge.danger.hl path { fill: var(--rad-danger); }
+  .rm-wedge text { fill: var(--rad-text); font-size: 12px; text-anchor: middle;
+    paint-order: stroke; stroke: rgba(var(--rad-shadow), .55); stroke-width: 3px; }
+  .rm-wedge .sub-caret { fill: var(--rad-text-dim); font-size: 10px; stroke: none; }
+  .rm-wedge.hl .sub-caret { fill: var(--rad-accent-ink); }
+  .rm-hub { fill: var(--rad-hub-fill); stroke: var(--rad-wedge-stroke); stroke-width: 1; }
+  .rm-hub-label { fill: var(--rad-text-dim); font-size: 11px; text-anchor: middle; }
   .rm-root { animation: rm-in 150ms ease-out; }
   @keyframes rm-in { from { opacity: 0; } }
   @media (pointer: coarse) {
     .rm-wedge text { font-size: 13.5px; }
     .node text { font-size: 12.5px; }
-    button.chip { min-height: 44px; }        /* touch-target floor (ADR-002) */
+    /* touch-target floor: rad interaction contract §2. Width as well as
+       height — the icon-only chips (× and ■) cleared 44px vertically and
+       were 35px wide, which is not a 44px target. */
+    button.chip { min-height: 44px; min-width: 44px; }
   }
 
   /* ---- accessibility foundation ---- */
   .skip {
     position: fixed; top: -48px; left: 12px; z-index: 40;
-    background: var(--accent); color: var(--accent-ink); padding: 10px 16px;
+    background: var(--rad-accent); color: var(--rad-accent-ink); padding: 10px 16px;
     border-radius: 4px; text-decoration: none; font-weight: 600;
     transition: top 120ms ease;
   }
-  .skip:focus-visible { top: 12px; outline: 2px solid var(--ink); }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .skip:focus-visible { top: 12px; outline: 2px solid var(--rad-text); }
+  :focus-visible { outline: 2px solid var(--rad-accent); outline-offset: 2px; }
   .node:focus { outline: none; }
-  .node.kfocus circle.body { stroke: var(--ok); stroke-width: 4; }
+  .node.kfocus circle.body { stroke: var(--rad-ok); stroke-width: 4; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
@@ -142,8 +310,8 @@
 
   /* ---- tour panel: the ONE menu on the page ---- */
   #tour-panel {
-    position: fixed; z-index: 20; background: var(--surface);
-    border: 1px solid var(--line); display: flex; flex-direction: column;
+    position: fixed; z-index: 20; background: var(--rad-panel-bg);
+    border: 1px solid var(--rad-panel-line); display: flex; flex-direction: column;
     right: 10px; top: 54px; bottom: 54px; width: 310px; border-radius: 6px;
     transform: translateX(0); transition: transform 160ms ease, opacity 160ms ease;
   }
@@ -154,45 +322,86 @@
   }
   #tour-panel .t-head {
     display: flex; align-items: center; gap: 8px; padding: 10px 12px;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--rad-panel-line);
   }
   #tour-panel .t-head b { flex: 1; font-size: 14px; }
-  #tour-panel .t-head .prog { color: var(--ink-dim); font: 11px ui-monospace, monospace; }
-  #tour-panel .t-head button { min-width: 34px; }
+  #tour-panel .t-head .prog { color: var(--rad-text-dim); font: 11px ui-monospace, monospace; }
+  #tour-panel .t-head button { min-width: 34px; }   /* raised to 44 under (pointer: coarse) below */
   #tour-panel .t-body { overflow-y: auto; padding: 4px 0 10px; overscroll-behavior: contain; }
+  #tour-panel:focus-visible { outline: 2px solid var(--rad-focus-ring); outline-offset: -2px; }
+
+  /* ---- speed controls: three axes (tempo-driven-interaction-speed §5) ---- */
+  .t-speed { padding: 8px 12px 10px; border-bottom: 1px solid var(--rad-panel-line);
+    display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; }
+  .t-transport { display: flex; align-items: center; gap: 6px; }
+  .t-transport .rate { margin-left: auto; color: var(--rad-text-dim);
+    font: 11px ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .t-row { display: grid; grid-template-columns: 54px 1fr auto; align-items: center;
+    gap: 8px; font-size: 12px; color: var(--rad-text-dim); }
+  .t-row > span:first-child { color: var(--rad-text); }
+  .t-row output { font: 11px ui-monospace, monospace; font-variant-numeric: tabular-nums;
+    white-space: nowrap; }
+  .t-row input[type="range"] { width: 100%; accent-color: var(--rad-accent); min-height: 24px; }
+  .t-row input[type="range"]:disabled { opacity: .45; }
+  .t-row select { background: var(--rad-wedge-fill); color: var(--rad-text);
+    border: 1px solid var(--rad-wedge-stroke); border-radius: 4px; padding: 3px 6px; font: inherit; font-size: 12px; }
+  .t-link { grid-template-columns: auto 1fr; }
+  .t-link input { accent-color: var(--rad-accent); width: 16px; height: 16px; }
+  .t-link label { color: var(--rad-text-dim); }
+  #tour-panel.playing .t-transport #play-chip { border-color: var(--rad-accent); color: var(--rad-accent); }
+  @media (pointer: coarse) {
+    .t-row input[type="range"] { min-height: 44px; }
+    /* The link checkbox was a 22px target inside a page that holds everything
+       else to 44. Widening the test selector to include it is what surfaced
+       that; a large checkbox is the consistent answer, not an exemption. */
+    .t-link input { width: 44px; height: 44px; }
+  }
+
+  /* The icon-only chips joined the 44px-tall box at 35px wide:
+     `#tour-panel .t-head button` outranks a bare `.chip`, and equal-specificity
+     rules are settled by source order, so this override belongs here — after
+     the panel rules — rather than in the earlier coarse-pointer block. */
+  @media (pointer: coarse) {
+    #tour-panel .t-head button,
+    #tour-panel .t-speed button { min-width: 44px; min-height: 44px; }
+  }
+
+  /* Visually hidden, still announced. One live region, not four. */
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   #tour-panel h3 {
     margin: 12px 12px 4px; font-size: 11px; letter-spacing: .08em;
-    text-transform: uppercase; color: var(--ink-dim); font-weight: 600;
+    text-transform: uppercase; color: var(--rad-text-dim); font-weight: 600;
   }
   #tour-panel ol { list-style: none; margin: 0; padding: 0; }
   .step { display: flex; gap: 8px; padding: 7px 12px; align-items: flex-start; scroll-margin-top: 40px; }
-  .step + .step { border-top: 1px solid #191d23; }
+  .step + .step { border-top: 1px solid var(--rad-line-soft); }
   .step .go {
     flex: 0 0 auto; cursor: pointer; margin-top: 1px;
     width: 30px; height: 30px; border-radius: 4px; font-size: 12px; line-height: 1;
-    background: var(--wedge); color: var(--ink); border: 1px solid var(--wedge-stroke);
+    background: var(--rad-wedge-fill); color: var(--rad-text); border: 1px solid var(--rad-wedge-stroke);
   }
-  .step.seen .go { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  .step.running .go { border-color: var(--accent); color: var(--accent); }
+  .step.seen .go { background: var(--rad-accent); color: var(--rad-accent-ink); border-color: var(--rad-accent); }
+  .step.running .go { border-color: var(--rad-accent); color: var(--rad-accent); }
   .step .tx { flex: 1; min-width: 0; }
   .step .tx b { display: block; font-size: 13px; }
-  .step .tx span { display: block; color: var(--ink-dim); font-size: 12px; line-height: 1.4; }
-  .step .tx a { color: var(--accent); text-decoration: none; }
+  .step .tx span { display: block; color: var(--rad-text-dim); font-size: 12px; line-height: 1.4; }
+  .step .tx a { color: var(--rad-accent); text-decoration: none; }
   @media (pointer: coarse) { .step .go { width: 44px; height: 44px; font-size: 15px; } }
 
   /* ---- demo driver visuals ---- */
   #finger {
     position: fixed; z-index: 30; width: 34px; height: 34px; border-radius: 50%;
-    border: 2px solid var(--accent); background: rgba(79,124,201,.25);
+    border: 2px solid var(--rad-accent); background: rgba(var(--rad-accent-rgb), .25);
     transform: translate(-50%, -50%); pointer-events: none; opacity: 0; left: 0; top: 0;
   }
   .ripple {
-    position: fixed; z-index: 29; border-radius: 50%; border: 2px solid var(--accent);
+    position: fixed; z-index: 29; border-radius: 50%; border: 2px solid var(--rad-accent);
     transform: translate(-50%, -50%); pointer-events: none;
   }
   .spot {
-    position: fixed; z-index: 28; border: 2px solid var(--accent); border-radius: 6px;
-    pointer-events: none; box-shadow: 0 0 0 4px rgba(79,124,201,.18);
+    position: fixed; z-index: 28; border: 2px solid var(--rad-accent); border-radius: 6px;
+    pointer-events: none; box-shadow: 0 0 0 4px rgba(var(--rad-accent-rgb), .18);
   }
 </style>
 </head>
@@ -200,16 +409,17 @@
 <a class="skip" href="#tour-panel">Skip to tour</a>
 <header>
   <div>
-    <div class="title">QM radial menu</div>
-    <div class="sub" id="subtitle">graph manipulation, governed</div>
+    <div class="title">rad</div>
+    <div class="sub" id="subtitle">QM's default radial menu</div>
   </div>
   <div class="spacer"></div>
   <div id="hud" aria-label="interaction meters"></div>
   <button class="chip" id="tour-chip" aria-expanded="true" aria-controls="tour-panel">Tour</button>
-  <button class="chip" id="clock-chip" title="cycle internal BPM">♩120 int</button>
+  <button class="chip" id="clock-chip" title="clock source and tempo">♩60 int</button>
   <button class="chip" id="q-chip" title="quantize commits to the clock">Q off</button>
-  <button class="chip" id="midi-chip" title="listen for external MIDI clock">MIDI</button>
-  <button class="chip" id="conf-btn" aria-live="polite">Vectors ▷</button>
+  <button class="chip" id="midi-chip" title="listen for external MIDI clock and CC">MIDI</button>
+  <button class="chip" id="theme-chip" title="cycle colour theme" aria-label="Colour theme: dark. Activate to cycle.">◐ dark</button>
+  <button class="chip" id="conf-btn">Vectors ▷</button>
 </header>
 
 <svg id="stage" role="application" aria-label="Graph canvas. Long-press or right-click for radial menu.">
@@ -221,14 +431,59 @@
 </svg>
 
 <div id="hint">Long-press / right-click for the menu · drag nodes · pinch / wheel to zoom · <b>m</b> = menu on selection · the <b>Tour</b> shows everything else</div>
-<div id="log" aria-live="polite"></div>
+<!-- The intent log is decoration for a screen-reader user: it repeats, as a
+     stream, what the single live region has already announced once. It is
+     hidden from the accessibility tree rather than made a fourth competing
+     announcer. -->
+<div id="log" aria-hidden="true"></div>
+<div id="sr-live" role="status" aria-live="polite" class="sr-only"></div>
 
-<aside id="tour-panel" role="region" aria-label="Interactive tour">
+<aside id="tour-panel" role="region" aria-label="Interactive tour" tabindex="-1">
   <div class="t-head">
     <b>Tour</b>
-    <span class="prog" id="tour-prog" aria-live="polite"></span>
+    <span class="prog" id="tour-prog"></span>
     <button class="chip" id="tour-close" aria-label="Close tour">×</button>
   </div>
+
+  <!-- Speed: three axes, native form controls. A cycling chip would be cheaper
+       and match the header, but it cannot report its range to a screen reader
+       and cannot be set directly. See the tempo-driven-interaction-speed
+       record §5. -->
+  <div class="t-speed" role="group" aria-label="Playback speed">
+    <div class="t-transport">
+      <button class="chip" id="play-chip" aria-label="Play the whole tour">▶ Play</button>
+      <button class="chip" id="stop-chip" aria-label="Stop playback" disabled>■</button>
+      <span class="rate" id="rate-read" aria-hidden="true"></span>
+    </div>
+    <label class="t-row" for="bpm-range">
+      <span>Tempo</span>
+      <input type="range" id="bpm-range" min="30" max="300" step="1" value="60"
+             aria-describedby="bpm-out">
+      <output id="bpm-out" for="bpm-range">60 bpm</output>
+    </label>
+    <label class="t-row" for="div-select">
+      <span>Grid</span>
+      <select id="div-select" aria-describedby="div-hint">
+        <option value="0.5">½ per beat</option>
+        <option value="1" selected>1 per beat</option>
+        <option value="2">2 per beat</option>
+        <option value="3">3 per beat</option>
+        <option value="4">4 per beat</option>
+      </select>
+      <output id="div-hint" for="div-select">quantize + action grid</output>
+    </label>
+    <label class="t-row" for="aps-range">
+      <span>Actions</span>
+      <input type="range" id="aps-range" min="0.25" max="8" step="0.25" value="1"
+             aria-describedby="aps-out" disabled>
+      <output id="aps-out" for="aps-range">1.00 aps · linked</output>
+    </label>
+    <div class="t-row t-link">
+      <input type="checkbox" id="aps-link" checked>
+      <label for="aps-link">Link action rate to tempo</label>
+    </div>
+  </div>
+
   <div class="t-body" id="tour-body"></div>
 </aside>
 <div id="finger" aria-hidden="true"></div>
@@ -240,7 +495,15 @@
  * This block has no DOM references; the conformance runner
  * exercises exactly these functions. (Seam per the contract.)
  * ============================================================ */
-const GEOM = { startDeg: -90, clockwise: true, r0: 36, r1: 108, longPressMs: 350, slop: 10 };
+const GEOM = { startDeg: -90, clockwise: true, r0: 36, r1: 108, cancelScale: 1.35, longPressMs: 350, slop: 10 };
+const MAX_ITEMS = 8;                 // contract §1; the resolver enforces it
+/* The committing band, identical in both commit styles (contract §2/§3).
+ * Inward of r0 is the dead-zone cancel; outward of r_cancel is its mirror.
+ * Before this bound existed, release-select had no outer limit at all and
+ * tap-select cancelled at 1.35·r1 — the same point committed or cancelled
+ * depending on how the menu had been opened. */
+function rCancel(g = GEOM) { return g.r1 * g.cancelScale; }
+function inBand(r, g = GEOM) { return r > g.r0 && r <= rCancel(g); }
 
 function normDeg(d) { return ((d % 360) + 360) % 360; }
 function angleToIndex(thetaDeg, n, startDeg = GEOM.startDeg) {
@@ -295,7 +558,18 @@ function classifyBurst(evts, chordGap = TIME.chordGapMs) {
  * ev: {type:'down'|'longpress'|'move'|'up'|'open'|'key'|'close', r, thetaDeg, key}
  * Effects: {t:'highlight',i} {t:'commit',item} {t:'cancel'} {t:'submenu',item} {t:'back'} {t:'open'}
  */
+/* Contract §1: at most 8 items per ring, and the resolver enforces it rather
+ * than a reviewer noticing. Checked here so submenu rings are covered too —
+ * overflow is a design error, and thinner-than-44-unit wedges are what it
+ * silently produces. */
+function assertRing(items, where) {
+  if (!Array.isArray(items) || items.length < 1)
+    throw new RangeError(`rad: ${where} ring must hold at least one item`);
+  if (items.length > MAX_ITEMS)
+    throw new RangeError(`rad: ${where} ring has ${items.length} items, contract §1 caps a ring at ${MAX_ITEMS} — group into a submenu`);
+}
 function createMachine(spec) {
+  assertRing(spec.items, spec.title || 'root');
   return {
     status: 'closed',          // closed | pending | open
     mode: null,                // 'tracking' (release-select) | 'idle' (tap-select)
@@ -311,9 +585,18 @@ function step(s, ev) {
   const fx = [];
   const items = mItems(s);
   const n = items.length;
-  const setHl = (i) => { if (i !== s.highlight) { s.highlight = i; fx.push({ t: 'highlight', i }); } };
-  const inRing = (r) => r > GEOM.r0;
-  const outFar = (r) => r > GEOM.r1 * 1.35;
+  /* A highlight effect carries the resolved label and id, not just an index
+   * (contract §3). A batch can replace the ring — `submenu` does — so an index
+   * alone is ambiguous by the time the consumer reads it: it names the ring
+   * that was current when the effect was emitted, and the consumer sees the
+   * ring that is current after the whole batch. */
+  const setHl = (i) => {
+    if (i === s.highlight) return;
+    s.highlight = i;
+    const it = i == null ? null : items[i];
+    fx.push({ t: 'highlight', i, id: it ? it.id : null, label: it ? (it.label ?? '') : '' });
+  };
+  const beyond = (r) => r > rCancel();
 
   switch (ev.type) {
     case 'open':                     // explicit open -> tap-select mode
@@ -323,8 +606,8 @@ function step(s, ev) {
     case 'down':
       if (s.status === 'closed') { s.status = 'pending'; break; }
       if (s.status === 'open' && s.mode === 'idle') {
-        if (!inRing(ev.r) && ev.r <= GEOM.r0) { s.pressIndex = 'hub'; break; }
-        if (outFar(ev.r)) { close(s, fx, true); break; }
+        if (ev.r <= GEOM.r0) { s.pressIndex = 'hub'; break; }   // latch the back/cancel affordance
+        if (beyond(ev.r)) { close(s, fx, true); break; }
         s.pressIndex = angleToIndex(ev.thetaDeg, n); setHl(s.pressIndex);
       }
       break;
@@ -335,25 +618,29 @@ function step(s, ev) {
 
     case 'move':
       if (s.status !== 'open') break;
-      if (inRing(ev.r)) {
+      // A latched hub press can no longer commit a wedge, so it must not
+      // highlight one: a highlight that cannot commit is the interface lying
+      // about its own next state, and it fires a haptic for a non-event.
+      if (s.pressIndex === 'hub') break;
+      if (inBand(ev.r)) {
         const i = angleToIndex(ev.thetaDeg, n);
         setHl(i);
         // drag-through submenu entry (release-select only)
         if (s.mode === 'tracking' && ev.r > GEOM.r1 + 12 && items[i] && items[i].children) {
           enterSub(s, fx, items[i]);
         }
-      } else setHl(null);
+      } else setHl(null);            // inside the dead zone, or beyond r_cancel
       break;
 
     case 'up':
       if (s.status === 'pending') { close(s, fx, true); break; }   // short press: never opened
       if (s.status !== 'open') break;
       if (s.mode === 'tracking') {
-        if (inRing(ev.r) && s.highlight != null) commit(s, fx, items[s.highlight]);
-        else close(s, fx, true);                                    // dead-zone release cancels
+        if (inBand(ev.r) && s.highlight != null) commit(s, fx, items[s.highlight]);
+        else close(s, fx, true);                                   // dead zone or beyond r_cancel
       } else { // idle / tap-select
         if (s.pressIndex === 'hub') { s.pressIndex = null; back(s, fx); break; }
-        if (s.pressIndex != null && inRing(ev.r) && angleToIndex(ev.thetaDeg, n) === s.pressIndex) {
+        if (s.pressIndex != null && inBand(ev.r) && angleToIndex(ev.thetaDeg, n) === s.pressIndex) {
           commit(s, fx, items[s.pressIndex]);
         }
         s.pressIndex = null;
@@ -373,6 +660,7 @@ function step(s, ev) {
   return fx;
 
   function enterSub(st, fx2, item) {
+    assertRing(item.children, item.label || item.id);
     st.stack.push({ items: item.children, title: item.label });
     st.highlight = null; st.pressIndex = null;
     fx2.push({ t: 'submenu', item });
@@ -393,95 +681,1095 @@ function step(s, ev) {
   }
 }
 
-/* ============================================================
- * CONFORMANCE VECTORS (inline copy of conformance/vectors.json)
- * ============================================================ */
+/* BEGIN GENERATED VECTORS — generated by scripts/sync-vectors.mjs from
+ * conformance/vectors.json. Do not edit by hand; run `npm run sync:vectors`.
+ * The JSON file is the governed artifact, this is a build product of it. */
 const VECTORS = {
-  version: '0.2.0',
-  cases: [
-    { name: 'angle-to-index basics, N=4', n: 4, pure: [
-      { thetaDeg: -90, expectIndex: 0 }, { thetaDeg: 0, expectIndex: 1 },
-      { thetaDeg: 90, expectIndex: 2 }, { thetaDeg: 180, expectIndex: 3 },
-      { thetaDeg: -46, expectIndex: 0 }, { thetaDeg: -134, expectIndex: 0 },
-      { thetaDeg: -44, expectIndex: 1 }, { thetaDeg: 269.9, expectIndex: 0 } ] },
-    { name: 'angle-to-index wedge boundaries, N=6', n: 6, pure: [
-      { thetaDeg: -90, expectIndex: 0 }, { thetaDeg: -30, expectIndex: 1 },
-      { thetaDeg: -60.1, expectIndex: 0 }, { thetaDeg: -59.9, expectIndex: 1 },
-      { thetaDeg: 150, expectIndex: 4 } ] },
-    { name: 'release-select commit', n: 4,
-      trace: [ { type: 'down', r: 0, thetaDeg: 0 }, { type: 'longpress' },
-        { type: 'move', r: 70, thetaDeg: 0 }, { type: 'up', r: 70, thetaDeg: 0 } ],
-      expectHighlights: [1], expect: { committed: 1, cancelled: false } },
-    { name: 'release-select sweep then commit', n: 4,
-      trace: [ { type: 'down', r: 0, thetaDeg: 0 }, { type: 'longpress' },
-        { type: 'move', r: 70, thetaDeg: -90 }, { type: 'move', r: 70, thetaDeg: 0 },
-        { type: 'move', r: 72, thetaDeg: 2 }, { type: 'move', r: 70, thetaDeg: 90 },
-        { type: 'up', r: 70, thetaDeg: 90 } ],
-      expectHighlights: [0, 1, 2], expect: { committed: 2, cancelled: false } },
-    { name: 'release in dead zone cancels', n: 4,
-      trace: [ { type: 'down', r: 0, thetaDeg: 0 }, { type: 'longpress' },
-        { type: 'move', r: 80, thetaDeg: 180 }, { type: 'move', r: 20, thetaDeg: 180 },
-        { type: 'up', r: 20, thetaDeg: 180 } ],
-      expectHighlights: [3, null], expect: { committed: null, cancelled: true } },
-    { name: 'short press never opens', n: 4,
-      trace: [ { type: 'down', r: 0, thetaDeg: 0 }, { type: 'up', r: 2, thetaDeg: 0 } ],
-      expectHighlights: [], expect: { committed: null, cancelled: true, opened: false } },
-    { name: 'tap-select: open idle, hover, click commits', n: 6,
-      trace: [ { type: 'open' }, { type: 'move', r: 80, thetaDeg: -30 },
-        { type: 'move', r: 80, thetaDeg: 30 }, { type: 'down', r: 80, thetaDeg: 30 },
-        { type: 'up', r: 80, thetaDeg: 30 } ],
-      expectHighlights: [1, 2], expect: { committed: 2, cancelled: false } },
-    { name: 'tap outside cancels', n: 6,
-      trace: [ { type: 'open' }, { type: 'down', r: 300, thetaDeg: 45 },
-        { type: 'up', r: 300, thetaDeg: 45 } ],
-      expectHighlights: [], expect: { committed: null, cancelled: true } },
-    { name: 'keyboard rotate and commit', n: 5,
-      trace: [ { type: 'open' }, { type: 'key', key: 'ArrowRight' }, { type: 'key', key: 'ArrowRight' },
-        { type: 'key', key: 'ArrowLeft' }, { type: 'key', key: 'Enter' } ],
-      expectHighlights: [0, 1, 0], expect: { committed: 0, cancelled: false } },
-    { name: 'keyboard escape cancels', n: 5,
-      trace: [ { type: 'open' }, { type: 'key', key: 'ArrowLeft' }, { type: 'key', key: 'Escape' } ],
-      expectHighlights: [4], expect: { committed: null, cancelled: true } },
-    { name: 'edge-triggered highlight: jitter within one wedge fires once', n: 8,
-      trace: [ { type: 'open' }, { type: 'move', r: 80, thetaDeg: -90 },
-        { type: 'move', r: 82, thetaDeg: -88 }, { type: 'move', r: 78, thetaDeg: -92 },
-        { type: 'move', r: 80, thetaDeg: -91 } ],
-      expectHighlights: [0], expect: { committed: null, cancelled: false, stillOpen: true } },
-    { name: 'quantize next-beat', quant: [
-      { t: 1210, phase: 1000, period: 500, policy: 'next', expectT: 1500 },
-      { t: 1500, phase: 1000, period: 500, policy: 'next', expectT: 1500 },
-      { t: 1501, phase: 1000, period: 500, policy: 'next', expectT: 2000 },
-      { t: 980, phase: 1000, period: 500, policy: 'next', expectT: 1000 } ] },
-    { name: 'quantize nearest', quant: [
-      { t: 1210, phase: 1000, period: 500, policy: 'nearest', expectT: 1000 },
-      { t: 1260, phase: 1000, period: 500, policy: 'nearest', expectT: 1500 },
-      { t: 1740, phase: 1000, period: 500, policy: 'nearest', expectT: 1500 } ] },
-    { name: 'quantize next-bar (period = 4 beats)', quant: [
-      { t: 1210, phase: 1000, period: 2000, policy: 'next', expectT: 3000 } ] },
-    { name: 'tempo estimate: clean 120 bpm', tempo: { periods: Array(48).fill(20.8333), expectBpm: 120, tol: 0.05 } },
-    { name: 'tempo estimate: USB jitter, median holds', tempo: {
-      periods: [20.8, 22.1, 19.6, 20.9, 20.8, 24.0, 17.7, 20.85, 20.8, 20.9, 20.8, 20.83, 20.9, 20.8, 20.87, 20.8],
-      expectBpm: 120, tol: 1.0 } },
-    { name: 'tempo estimate: one tick is silence', tempo: { periods: [], expectBpm: null } },
-    { name: 'chord: machine-fast word is chorded', chord: {
-      evts: [ { k: 'p', t: 0 }, { k: 'i', t: 8 }, { k: 'n', t: 16 } ],
-      expectWord: 'pin', expectChorded: true } },
-    { name: 'chord: human-slow word is typed', chord: {
-      evts: [ { k: 'p', t: 0 }, { k: 'i', t: 180 }, { k: 'n', t: 420 } ],
-      expectWord: 'pin', expectChorded: false } },
-    { name: 'chord: single key is never chorded', chord: {
-      evts: [ { k: 'f', t: 0 } ], expectWord: 'f', expectChorded: false } },
-    { name: 'burst split at gap > 80ms', split: {
-      evts: [ { k: 'h', t: 0 }, { k: 'd', t: 10 }, { k: 'f', t: 300 }, { k: 'i', t: 308 }, { k: 't', t: 316 } ],
-      expectWords: ['hd', 'fit'] } },
-  ],
+  "version": "0.3.0",
+  "geometry": {
+    "startDeg": -90,
+    "clockwise": true,
+    "r0": 36,
+    "r1": 108,
+    "longPressMs": 350,
+    "slop": 10,
+    "cancelScale": 1.35,
+    "maxItems": 8
+  },
+  "time": {
+    "ppqn": 24,
+    "chordGapMs": 30,
+    "burstSplitMs": 250
+  },
+  "notes": "Traces are polar, relative to menu center. r in density-independent units. thetaDeg uses screen convention where -90 is up. 'expectHighlights' is the edge-triggered sequence of item indices (null = none); 'expectLabels' is the label each highlight effect carried, which must be resolvable without consulting live state. v0.3.0 adds: the outward cancel bound r_cancel = cancelScale * r1, identical in both commit styles; hub-latch highlight suppression; the ring ceiling; prefix-freeness of a chord vocabulary; and the three tempo axes (bpm, div, aps) with their MIDI CC mappings. v0.2.0 added pure suites: quant (quantizeTime), tempo (estimateBpm over 24ppqn ticks, median period), chord (classifyBurst), split (splitBursts).",
+  "cases": [
+    {
+      "name": "angle-to-index basics, N=4",
+      "n": 4,
+      "pure": [
+        {
+          "thetaDeg": -90,
+          "expectIndex": 0
+        },
+        {
+          "thetaDeg": 0,
+          "expectIndex": 1
+        },
+        {
+          "thetaDeg": 90,
+          "expectIndex": 2
+        },
+        {
+          "thetaDeg": 180,
+          "expectIndex": 3
+        },
+        {
+          "thetaDeg": -46,
+          "expectIndex": 0
+        },
+        {
+          "thetaDeg": -134,
+          "expectIndex": 0
+        },
+        {
+          "thetaDeg": -44,
+          "expectIndex": 1
+        },
+        {
+          "thetaDeg": 269.9,
+          "expectIndex": 0
+        }
+      ]
+    },
+    {
+      "name": "angle-to-index wedge boundaries, N=6",
+      "n": 6,
+      "pure": [
+        {
+          "thetaDeg": -90,
+          "expectIndex": 0
+        },
+        {
+          "thetaDeg": -30,
+          "expectIndex": 1
+        },
+        {
+          "thetaDeg": -60.1,
+          "expectIndex": 0
+        },
+        {
+          "thetaDeg": -59.9,
+          "expectIndex": 1
+        },
+        {
+          "thetaDeg": 150,
+          "expectIndex": 4
+        }
+      ]
+    },
+    {
+      "name": "release-select commit",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "down",
+          "r": 0,
+          "thetaDeg": 0
+        },
+        {
+          "t": 350,
+          "type": "longpress"
+        },
+        {
+          "t": 420,
+          "type": "move",
+          "r": 70,
+          "thetaDeg": 0
+        },
+        {
+          "t": 500,
+          "type": "up",
+          "r": 70,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [
+        1
+      ],
+      "expect": {
+        "committed": 1,
+        "cancelled": false
+      }
+    },
+    {
+      "name": "release-select sweep then commit",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "down",
+          "r": 0,
+          "thetaDeg": 0
+        },
+        {
+          "t": 350,
+          "type": "longpress"
+        },
+        {
+          "t": 400,
+          "type": "move",
+          "r": 70,
+          "thetaDeg": -90
+        },
+        {
+          "t": 450,
+          "type": "move",
+          "r": 70,
+          "thetaDeg": 0
+        },
+        {
+          "t": 470,
+          "type": "move",
+          "r": 72,
+          "thetaDeg": 2
+        },
+        {
+          "t": 500,
+          "type": "move",
+          "r": 70,
+          "thetaDeg": 90
+        },
+        {
+          "t": 560,
+          "type": "up",
+          "r": 70,
+          "thetaDeg": 90
+        }
+      ],
+      "expectHighlights": [
+        0,
+        1,
+        2
+      ],
+      "expect": {
+        "committed": 2,
+        "cancelled": false
+      }
+    },
+    {
+      "name": "release in dead zone cancels",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "down",
+          "r": 0,
+          "thetaDeg": 0
+        },
+        {
+          "t": 350,
+          "type": "longpress"
+        },
+        {
+          "t": 400,
+          "type": "move",
+          "r": 80,
+          "thetaDeg": 180
+        },
+        {
+          "t": 450,
+          "type": "move",
+          "r": 20,
+          "thetaDeg": 180
+        },
+        {
+          "t": 500,
+          "type": "up",
+          "r": 20,
+          "thetaDeg": 180
+        }
+      ],
+      "expectHighlights": [
+        3,
+        null
+      ],
+      "expect": {
+        "committed": null,
+        "cancelled": true
+      }
+    },
+    {
+      "name": "short press never opens",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "down",
+          "r": 0,
+          "thetaDeg": 0
+        },
+        {
+          "t": 200,
+          "type": "up",
+          "r": 2,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [],
+      "expect": {
+        "committed": null,
+        "cancelled": true,
+        "opened": false
+      }
+    },
+    {
+      "name": "tap-select: open idle, hover, click commits",
+      "n": 6,
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "move",
+          "r": 80,
+          "thetaDeg": -30
+        },
+        {
+          "t": 200,
+          "type": "move",
+          "r": 80,
+          "thetaDeg": 30
+        },
+        {
+          "t": 300,
+          "type": "down",
+          "r": 80,
+          "thetaDeg": 30
+        },
+        {
+          "t": 360,
+          "type": "up",
+          "r": 80,
+          "thetaDeg": 30
+        }
+      ],
+      "expectHighlights": [
+        1,
+        2
+      ],
+      "expect": {
+        "committed": 2,
+        "cancelled": false
+      }
+    },
+    {
+      "name": "tap outside cancels",
+      "n": 6,
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 200,
+          "type": "down",
+          "r": 300,
+          "thetaDeg": 45
+        },
+        {
+          "t": 260,
+          "type": "up",
+          "r": 300,
+          "thetaDeg": 45
+        }
+      ],
+      "expectHighlights": [],
+      "expect": {
+        "committed": null,
+        "cancelled": true
+      }
+    },
+    {
+      "name": "keyboard rotate and commit",
+      "n": 5,
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "key",
+          "key": "ArrowRight"
+        },
+        {
+          "t": 200,
+          "type": "key",
+          "key": "ArrowRight"
+        },
+        {
+          "t": 300,
+          "type": "key",
+          "key": "ArrowLeft"
+        },
+        {
+          "t": 400,
+          "type": "key",
+          "key": "Enter"
+        }
+      ],
+      "expectHighlights": [
+        0,
+        1,
+        0
+      ],
+      "expect": {
+        "committed": 0,
+        "cancelled": false
+      }
+    },
+    {
+      "name": "keyboard escape cancels",
+      "n": 5,
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "key",
+          "key": "ArrowLeft"
+        },
+        {
+          "t": 200,
+          "type": "key",
+          "key": "Escape"
+        }
+      ],
+      "expectHighlights": [
+        4
+      ],
+      "expect": {
+        "committed": null,
+        "cancelled": true
+      }
+    },
+    {
+      "name": "edge-triggered highlight: jitter within one wedge fires once",
+      "n": 8,
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "move",
+          "r": 80,
+          "thetaDeg": -90
+        },
+        {
+          "t": 120,
+          "type": "move",
+          "r": 82,
+          "thetaDeg": -88
+        },
+        {
+          "t": 140,
+          "type": "move",
+          "r": 78,
+          "thetaDeg": -92
+        },
+        {
+          "t": 160,
+          "type": "move",
+          "r": 80,
+          "thetaDeg": -91
+        }
+      ],
+      "expectHighlights": [
+        0
+      ],
+      "expect": {
+        "committed": null,
+        "cancelled": false,
+        "stillOpen": true
+      }
+    },
+    {
+      "name": "quantize next-beat",
+      "quant": [
+        {
+          "t": 1210,
+          "phase": 1000,
+          "period": 500,
+          "policy": "next",
+          "expectT": 1500
+        },
+        {
+          "t": 1500,
+          "phase": 1000,
+          "period": 500,
+          "policy": "next",
+          "expectT": 1500
+        },
+        {
+          "t": 1501,
+          "phase": 1000,
+          "period": 500,
+          "policy": "next",
+          "expectT": 2000
+        },
+        {
+          "t": 980,
+          "phase": 1000,
+          "period": 500,
+          "policy": "next",
+          "expectT": 1000
+        }
+      ]
+    },
+    {
+      "name": "quantize nearest",
+      "quant": [
+        {
+          "t": 1210,
+          "phase": 1000,
+          "period": 500,
+          "policy": "nearest",
+          "expectT": 1000
+        },
+        {
+          "t": 1260,
+          "phase": 1000,
+          "period": 500,
+          "policy": "nearest",
+          "expectT": 1500
+        },
+        {
+          "t": 1740,
+          "phase": 1000,
+          "period": 500,
+          "policy": "nearest",
+          "expectT": 1500
+        }
+      ]
+    },
+    {
+      "name": "quantize next-bar (period = 4 beats)",
+      "quant": [
+        {
+          "t": 1210,
+          "phase": 1000,
+          "period": 2000,
+          "policy": "next",
+          "expectT": 3000
+        }
+      ]
+    },
+    {
+      "name": "tempo estimate: clean 120 bpm",
+      "tempo": {
+        "periods": [
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333,
+          20.8333
+        ],
+        "expectBpm": 120,
+        "tol": 0.05
+      }
+    },
+    {
+      "name": "tempo estimate: USB jitter, median holds",
+      "tempo": {
+        "periods": [
+          20.8,
+          22.1,
+          19.6,
+          20.9,
+          20.8,
+          24,
+          17.7,
+          20.85,
+          20.8,
+          20.9,
+          20.8,
+          20.83,
+          20.9,
+          20.8,
+          20.87,
+          20.8
+        ],
+        "expectBpm": 120,
+        "tol": 1
+      }
+    },
+    {
+      "name": "tempo estimate: one tick is silence",
+      "tempo": {
+        "periods": [],
+        "expectBpm": null
+      }
+    },
+    {
+      "name": "chord: machine-fast word is chorded",
+      "chord": {
+        "evts": [
+          {
+            "k": "p",
+            "t": 0
+          },
+          {
+            "k": "i",
+            "t": 8
+          },
+          {
+            "k": "n",
+            "t": 16
+          }
+        ],
+        "expectWord": "pin",
+        "expectChorded": true
+      }
+    },
+    {
+      "name": "chord: human-slow word is typed",
+      "chord": {
+        "evts": [
+          {
+            "k": "p",
+            "t": 0
+          },
+          {
+            "k": "i",
+            "t": 180
+          },
+          {
+            "k": "n",
+            "t": 420
+          }
+        ],
+        "expectWord": "pin",
+        "expectChorded": false
+      }
+    },
+    {
+      "name": "chord: single key is never chorded",
+      "chord": {
+        "evts": [
+          {
+            "k": "f",
+            "t": 0
+          }
+        ],
+        "expectWord": "f",
+        "expectChorded": false
+      }
+    },
+    {
+      "name": "burst split at gap > burstSplitMs (250)",
+      "split": {
+        "evts": [
+          {
+            "k": "h",
+            "t": 0
+          },
+          {
+            "k": "d",
+            "t": 10
+          },
+          {
+            "k": "f",
+            "t": 300
+          },
+          {
+            "k": "i",
+            "t": 308
+          },
+          {
+            "k": "t",
+            "t": 316
+          }
+        ],
+        "expectWords": [
+          "hd",
+          "fit"
+        ]
+      }
+    },
+    {
+      "name": "release-select cancels beyond r_cancel",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "down",
+          "r": 0,
+          "thetaDeg": 0
+        },
+        {
+          "t": 350,
+          "type": "longpress"
+        },
+        {
+          "t": 400,
+          "type": "move",
+          "r": 70,
+          "thetaDeg": 0
+        },
+        {
+          "t": 460,
+          "type": "move",
+          "r": 200,
+          "thetaDeg": 0
+        },
+        {
+          "t": 520,
+          "type": "up",
+          "r": 200,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [
+        1,
+        null
+      ],
+      "expect": {
+        "committed": null,
+        "cancelled": true
+      }
+    },
+    {
+      "name": "tap-select cancels beyond r_cancel",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "down",
+          "r": 200,
+          "thetaDeg": 0
+        },
+        {
+          "t": 160,
+          "type": "up",
+          "r": 200,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [],
+      "expect": {
+        "committed": null,
+        "cancelled": true
+      }
+    },
+    {
+      "name": "both commit styles agree inside the band (r=130 < r_cancel=145.8)",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "down",
+          "r": 130,
+          "thetaDeg": 0
+        },
+        {
+          "t": 160,
+          "type": "up",
+          "r": 130,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [
+        1
+      ],
+      "expect": {
+        "committed": 1,
+        "cancelled": false
+      }
+    },
+    {
+      "name": "release-select commits inside the band at the same point",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "down",
+          "r": 0,
+          "thetaDeg": 0
+        },
+        {
+          "t": 350,
+          "type": "longpress"
+        },
+        {
+          "t": 400,
+          "type": "move",
+          "r": 130,
+          "thetaDeg": 0
+        },
+        {
+          "t": 460,
+          "type": "up",
+          "r": 130,
+          "thetaDeg": 0
+        }
+      ],
+      "expectHighlights": [
+        1
+      ],
+      "expect": {
+        "committed": 1,
+        "cancelled": false
+      }
+    },
+    {
+      "name": "latched hub press does not highlight while dragging out",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "down",
+          "r": 10,
+          "thetaDeg": 0
+        },
+        {
+          "t": 200,
+          "type": "move",
+          "r": 80,
+          "thetaDeg": 0
+        },
+        {
+          "t": 260,
+          "type": "move",
+          "r": 80,
+          "thetaDeg": 90
+        },
+        {
+          "t": 320,
+          "type": "up",
+          "r": 80,
+          "thetaDeg": 90
+        }
+      ],
+      "expectHighlights": [],
+      "expect": {
+        "committed": null,
+        "cancelled": true
+      }
+    },
+    {
+      "name": "highlight effects carry their own label",
+      "n": 4,
+      "trace": [
+        {
+          "t": 0,
+          "type": "open"
+        },
+        {
+          "t": 100,
+          "type": "key",
+          "key": "ArrowRight"
+        },
+        {
+          "t": 200,
+          "type": "key",
+          "key": "ArrowRight"
+        }
+      ],
+      "expectHighlights": [
+        0,
+        1
+      ],
+      "expectLabels": [
+        "i0",
+        "i1"
+      ],
+      "expect": {
+        "committed": null,
+        "cancelled": false,
+        "stillOpen": true
+      }
+    },
+    {
+      "name": "ring ceiling: 8 items is legal, 9 raises",
+      "ceiling": [
+        {
+          "n": 1,
+          "expectThrows": false
+        },
+        {
+          "n": 8,
+          "expectThrows": false
+        },
+        {
+          "n": 9,
+          "expectThrows": true
+        },
+        {
+          "n": 0,
+          "expectThrows": true
+        }
+      ]
+    },
+    {
+      "name": "chord vocabulary must be prefix-free",
+      "vocab": {
+        "source": "CHORD_MAP",
+        "expectPrefixFree": true
+      }
+    },
+    {
+      "name": "prefix collision is detected when present",
+      "vocab": {
+        "words": [
+          "del",
+          "de",
+          "fit"
+        ],
+        "expectPrefixFree": false,
+        "expectCollisions": [
+          "de ⊂ del"
+        ]
+      }
+    },
+    {
+      "name": "aps derives from bpm and subdivision when linked",
+      "aps": [
+        {
+          "bpm": 60,
+          "div": 1,
+          "expectAps": 1
+        },
+        {
+          "bpm": 120,
+          "div": 1,
+          "expectAps": 2
+        },
+        {
+          "bpm": 60,
+          "div": 4,
+          "expectAps": 4
+        },
+        {
+          "bpm": 90,
+          "div": 0.5,
+          "expectAps": 0.75
+        },
+        {
+          "bpm": 30,
+          "div": 1,
+          "expectAps": 0.5
+        }
+      ]
+    },
+    {
+      "name": "MIDI CC maps onto each axis range",
+      "cc": [
+        {
+          "cc": 0,
+          "lo": 30,
+          "hi": 300,
+          "expect": 30
+        },
+        {
+          "cc": 127,
+          "lo": 30,
+          "hi": 300,
+          "expect": 300
+        },
+        {
+          "cc": 64,
+          "lo": 30,
+          "hi": 300,
+          "expect": 166.0629921259843
+        },
+        {
+          "cc": 0,
+          "lo": 0.25,
+          "hi": 8,
+          "expect": 0.25
+        },
+        {
+          "cc": 127,
+          "lo": 0.25,
+          "hi": 8,
+          "expect": 8
+        },
+        {
+          "cc": 200,
+          "lo": 30,
+          "hi": 300,
+          "expect": 300
+        },
+        {
+          "cc": -5,
+          "lo": 30,
+          "hi": 300,
+          "expect": 30
+        }
+      ]
+    },
+    {
+      "name": "MIDI CC quantizes onto the five legal subdivisions",
+      "ccdiv": [
+        {
+          "cc": 0,
+          "expect": 0.5
+        },
+        {
+          "cc": 25,
+          "expect": 0.5
+        },
+        {
+          "cc": 26,
+          "expect": 1
+        },
+        {
+          "cc": 51,
+          "expect": 1
+        },
+        {
+          "cc": 52,
+          "expect": 2
+        },
+        {
+          "cc": 64,
+          "expect": 2
+        },
+        {
+          "cc": 102,
+          "expect": 3
+        },
+        {
+          "cc": 103,
+          "expect": 4
+        },
+        {
+          "cc": 127,
+          "expect": 4
+        }
+      ]
+    },
+    {
+      "name": "grid period follows the subdivision axis",
+      "grid": [
+        {
+          "bpm": 60,
+          "div": 1,
+          "expectMs": 1000
+        },
+        {
+          "bpm": 60,
+          "div": 4,
+          "expectMs": 250
+        },
+        {
+          "bpm": 120,
+          "div": 2,
+          "expectMs": 250
+        },
+        {
+          "bpm": 60,
+          "div": 0.5,
+          "expectMs": 2000
+        }
+      ]
+    }
+  ]
 };
+/* END GENERATED VECTORS */
 
-function runConformance() {
+/* Prefix-freeness is the property the whole chord-TTC claim rests on: a known
+ * word can only finalize on its last keystroke if no word is a prefix of
+ * another. Nothing asserted it, so adding one verb could have silently
+ * reintroduced the 250 ms wait and quietly degraded every TTC figure. */
+function prefixCollisions(words) {
+  const out = [];
+  for (const a of words) for (const b of words) if (a !== b && b.startsWith(a)) out.push(`${a} ⊂ ${b}`);
+  return out.sort();
+}
+
+/* runConformanceWith(v) takes the vector set as an argument so a test runner
+ * can replay conformance/vectors.json — the GOVERNED file — rather than the
+ * inline copy the page ships for offline use. The two are kept identical by
+ * scripts/sync-vectors.mjs and a drift test; this is what makes that
+ * verifiable rather than assumed. */
+function runConformance() { return runConformanceWith(VECTORS); }
+function runConformanceWith(V) {
   const results = [];
-  for (const c of VECTORS.cases) {
+  for (const c of V.cases) {
     let pass = true, why = '';
-    if (c.quant) {
+    if (c.ceiling) {
+      for (const k of c.ceiling) {
+        let threw = false;
+        try { createMachine({ items: Array.from({ length: k.n }, (_, i) => ({ id: 'i' + i, label: 'i' + i })) }); }
+        catch { threw = true; }
+        if (threw !== k.expectThrows) { pass = false; why = `n=${k.n} threw ${threw}`; break; }
+      }
+    } else if (c.vocab) {
+      const words = c.vocab.words ?? Object.keys(CHORD_MAP);
+      const cols = prefixCollisions(words);
+      if ((cols.length === 0) !== c.vocab.expectPrefixFree) { pass = false; why = `collisions ${JSON.stringify(cols)}`; }
+      else if (c.vocab.expectCollisions && JSON.stringify(cols) !== JSON.stringify(c.vocab.expectCollisions))
+        { pass = false; why = `collisions ${JSON.stringify(cols)}`; }
+    } else if (c.aps) {
+      for (const k of c.aps) {
+        const got = apsFromTempo(k.bpm, k.div);
+        if (Math.abs(got - k.expectAps) > 1e-9) { pass = false; why = `bpm=${k.bpm} div=${k.div} → ${got}`; break; }
+      }
+    } else if (c.cc) {
+      for (const k of c.cc) {
+        const got = ccToRange(k.cc, k.lo, k.hi);
+        if (Math.abs(got - k.expect) > 1e-9) { pass = false; why = `cc=${k.cc} → ${got}, want ${k.expect}`; break; }
+      }
+    } else if (c.ccdiv) {
+      for (const k of c.ccdiv) {
+        const got = ccToDiv(k.cc);
+        if (got !== k.expect) { pass = false; why = `cc=${k.cc} → ${got}, want ${k.expect}`; break; }
+      }
+    } else if (c.grid) {
+      for (const k of c.grid) {
+        const got = (60000 / k.bpm) / k.div;
+        if (Math.abs(got - k.expectMs) > 1e-9) { pass = false; why = `bpm=${k.bpm} div=${k.div} → ${got}ms`; break; }
+      }
+    } else if (c.quant) {
       for (const q of c.quant) {
         const got = quantizeTime(q.t, q.phase, q.period, q.policy);
         if (Math.abs(got - q.expectT) > 1e-6) { pass = false; why = `t=${q.t} → ${got}, want ${q.expectT}`; break; }
@@ -509,13 +1797,14 @@ function runConformance() {
     } else {
       const spec = { items: Array.from({ length: c.n }, (_, i) => ({ id: 'i' + i, label: 'i' + i })) };
       const st = createMachine(spec);
-      const hl = [];
+      const hl = [], labels = [];
       for (const ev of c.trace) {
-        for (const f of step(st, ev)) if (f.t === 'highlight') hl.push(f.i);
+        for (const f of step(st, ev)) if (f.t === 'highlight') { hl.push(f.i); if (f.i != null) labels.push(f.label); }
       }
       const e = c.expect;
       const committedIdx = st.committed ? Number(st.committed.id.slice(1)) : null;
       if (JSON.stringify(hl) !== JSON.stringify(c.expectHighlights)) { pass = false; why = `highlights ${JSON.stringify(hl)}`; }
+      else if (c.expectLabels && JSON.stringify(labels) !== JSON.stringify(c.expectLabels)) { pass = false; why = `labels ${JSON.stringify(labels)}`; }
       else if (committedIdx !== e.committed) { pass = false; why = `committed ${committedIdx}`; }
       else if (st.cancelled !== e.cancelled) { pass = false; why = `cancelled ${st.cancelled}`; }
       else if ('opened' in e && st.opened !== e.opened) { pass = false; why = `opened ${st.opened}`; }
@@ -541,7 +1830,7 @@ const store = {
  * · L3 committed intents. IPA = discrete inputs per intent, where one
  * input = one down..up envelope, one keystroke, or one wheel step.
  * Budgets live in DRAFT-interaction-efficiency-metrics. */
-const meters = { l0: 0, l1: 0, l2: 0, l3: 0, inputsSinceIntent: 0, costs: [], ttcs: [], jits: [] };
+const meters = { l0: 0, l1: 0, l2: 0, l3: 0, fx: 0, inputsSinceIntent: 0, costs: [], ttcs: [], jits: [] };
 function p95(xs) {
   if (!xs.length) return null;
   const s = [...xs].sort((a, b) => a - b);
@@ -552,21 +1841,56 @@ function meterHud() {
   const hud = document.getElementById('hud');
   const avg = meters.costs.length ? (meters.costs.reduce((a, b) => a + b, 0) / meters.costs.length) : 0;
   const last = meters.costs.length ? meters.costs[meters.costs.length - 1] : '–';
-  hud.innerHTML = `L0 ${meters.l0} · L1 ${meters.l1} · L2 ${meters.l2} · L3 ${meters.l3}<br>` +
+  hud.innerHTML = `L0 ${meters.l0} · L1 ${meters.l1} · L2 ${meters.l2} (${meters.fx}fx) · L3 ${meters.l3}<br>` +
     `IPA last <b>${last}</b> · mean <b>${avg ? avg.toFixed(2) : '–'}</b><br>` +
     `ttc p95 <b>${fmtMs(p95(meters.ttcs))}</b> · grid jit p95 <b>${fmtMs(p95(meters.jits))}</b>`;
 }
 
-/* ---------- clock + quantized dispatch ---------- */
-const clock = { source: 'internal', bpm: 120, running: true, phase: 0, beatPeriod: 500, ticks: [], tickCount: 0 };
+/* ---------- clock + quantized dispatch ----------
+ * Three independent axes (tempo record §1):
+ *   bpm  30..300, default 60  — the beat grid
+ *   div  ½ 1 2 3 4 per beat   — grid subdivision
+ *   aps  0.25..8              — the rate a SCRIPTED surface issues intents,
+ *                               linked to bpm/60·div by default, freeable
+ * None of them reaches the state machine: longPressMs, slop and the burst
+ * window are conformance-governed constants and stay fixed (§4). Tempo
+ * governs when things are scheduled and how fast a script issues them; it
+ * never governs what counts as a gesture. */
+const TEMPO_RANGE = { bpm: [30, 300], aps: [0.25, 8] };
+const DIVS = [0.5, 1, 2, 3, 4];
+const clock = { source: 'internal', bpm: 60, running: true, phase: 0, beatPeriod: 1000, ticks: [], tickCount: 0 };
+const tempo = { div: 1, aps: 1, linked: true };
 let qmode = 'off';           // off | beat | bar
 let lastInputT = null;       // DOMHighResTimeStamp of the most recent discrete input
 
+/* pure — the axes' arithmetic, exercised by conformance vectors */
+function clampTo(v, [lo, hi]) { return Math.min(hi, Math.max(lo, v)); }
+function apsFromTempo(bpm, div) { return (bpm / 60) * div; }
+function ccToRange(cc, lo, hi) { return lo + (clampTo(cc, [0, 127]) / 127) * (hi - lo); }
+function ccToDiv(cc, divs = DIVS) { return divs[Math.min(divs.length - 1, Math.floor(clampTo(cc, [0, 127]) / 128 * divs.length))]; }
+/* The period one scripted action occupies. Everything the demo driver and the
+ * tour wait on is a named fraction of this — no millisecond literals. */
+function actionPeriod() { return 1000 / tempo.aps; }
+function gridPeriod() { return clock.beatPeriod / tempo.div; }
+
 function setInternalBpm(bpm) {
-  clock.source = 'internal'; clock.bpm = bpm; clock.beatPeriod = 60000 / bpm;
+  clock.source = 'internal'; clock.bpm = clampTo(bpm, TEMPO_RANGE.bpm);
+  clock.beatPeriod = 60000 / clock.bpm;
   clock.phase = performance.now(); clock.ticks = []; clock.tickCount = 0;
-  updateClockChip();
+  syncTempo();
 }
+/* Linked is the honest default: a demo that drifts off the clock it claims to
+ * be driven by is a movie of the feature rather than the feature. */
+function syncTempo() {
+  if (tempo.linked) tempo.aps = clampTo(apsFromTempo(clock.bpm, tempo.div), TEMPO_RANGE.aps);
+  updateClockChip(); updateSpeedUI();
+  try {
+    localStorage.setItem('rad.tempo', JSON.stringify({ bpm: clock.bpm, div: tempo.div, aps: tempo.aps, linked: tempo.linked }));
+  } catch { /* private mode */ }
+}
+function setDiv(d) { tempo.div = DIVS.includes(d) ? d : 1; syncTempo(); }
+function setAps(v) { tempo.linked = false; tempo.aps = clampTo(v, TEMPO_RANGE.aps); syncTempo(); }
+function setLinked(on) { tempo.linked = !!on; syncTempo(); }
 function onMidiTick(t) {
   clock.ticks.push(t); if (clock.ticks.length > 96) clock.ticks.shift();
   clock.tickCount++;
@@ -579,11 +1903,35 @@ function updateClockChip() {
   const c = document.getElementById('clock-chip');
   if (c) c.textContent = `♩${Math.round(clock.bpm)} ${clock.source === 'midi' ? 'ext' : 'int'}`;
 }
+function updateSpeedUI() {
+  const $ = (id) => document.getElementById(id);
+  const bpmR = $('bpm-range'), apsR = $('aps-range'), divS = $('div-select'), link = $('aps-link');
+  if (!bpmR) return;
+  if (document.activeElement !== bpmR) bpmR.value = String(Math.round(clock.bpm));
+  if (document.activeElement !== apsR) apsR.value = String(tempo.aps);
+  if (document.activeElement !== divS) divS.value = String(tempo.div);
+  link.checked = tempo.linked;
+  apsR.disabled = tempo.linked;
+  $('bpm-out').textContent = `${Math.round(clock.bpm)} bpm`;
+  $('aps-out').textContent = `${tempo.aps.toFixed(2)} aps${tempo.linked ? ' · linked' : ' · free'}`;
+  $('div-hint').textContent = `${(gridPeriod()).toFixed(0)} ms grid`;
+  $('rate-read').textContent = `${(actionPeriod() / 1000).toFixed(2)}s / action`;
+}
 function spinTo(t) { while (performance.now() < t - 0.05) { /* sub-ms tail */ } }
+/* Coarse timer to SPIN_LEAD_MS before the grid point, then spin the tail.
+ * The timer is re-armed on every hop rather than trusted once: a single
+ * setTimeout under load can overshoot gridT outright, and a spin cannot go
+ * backwards — measured p95 was 4.9 ms with one-shot arming and a 2 ms lead,
+ * against a 1 ms budget. Re-checking converts a rare large overshoot into
+ * several small ones that the spin absorbs. */
+const SPIN_LEAD_MS = 8;
 function scheduleAt(gridT, fn) {
-  const lead = gridT - performance.now();
-  if (lead <= 2) { spinTo(gridT); fn(performance.now()); return; }
-  setTimeout(() => { spinTo(gridT); fn(performance.now()); }, Math.max(0, lead - 2));
+  const tick = () => {
+    const lead = gridT - performance.now();
+    if (lead <= SPIN_LEAD_MS) { spinTo(gridT); fn(performance.now()); return; }
+    setTimeout(tick, Math.max(0, lead - SPIN_LEAD_MS));
+  };
+  tick();
 }
 function dispatchIntent(intent, inputT) {
   const now = performance.now();
@@ -593,13 +1941,13 @@ function dispatchIntent(intent, inputT) {
     applyIntent(intent);
     return;
   }
-  const period = clock.beatPeriod * (qmode === 'bar' ? 4 : 1);
+  const period = qmode === 'bar' ? clock.beatPeriod * 4 : gridPeriod();
   const gridT = quantizeTime(now, clock.phase, period, 'next');
   scheduleAt(gridT, (actualT) => {
     intent.grid = {
       beat: Math.round((gridT - clock.phase) / clock.beatPeriod),
       deltaMs: +(actualT - gridT).toFixed(2),
-      bpm: Math.round(clock.bpm * 10) / 10, src: clock.source,
+      bpm: Math.round(clock.bpm * 10) / 10, div: tempo.div, src: clock.source,
     };
     intent.ttc = inputT != null ? Math.max(0, actualT - inputT) : null;
     if (intent.ttc != null) meters.ttcs.push(intent.ttc);
@@ -616,6 +1964,30 @@ function beatLoop() {
     beatLoop();
   }, Math.max(10, next - now));
 }
+/* MIDI message router. The three speed axes are reachable over the same
+ * transport as the clock (tempo record §3) — a surface whose tempo can be
+ * driven externally and whose action rate cannot is not on the clock in any
+ * useful sense. Controller numbers are a host binding, not contract.
+ * Split out and kept free of MIDIAccess so it is drivable in a test without
+ * a device; the Web MIDI half is the six lines in connectMidi below. */
+const MIDI_CC = { bpm: 20, aps: 21, div: 22, quantize: 23 };
+function onMidiMessage(data, timeStamp) {
+  const status = data[0];
+  switch (status) {
+    case 0xF8: onMidiTick(timeStamp); return;                    // clock tick, 24 PPQN
+    case 0xFA: clock.tickCount = 0; clock.ticks = []; clock.phase = timeStamp;
+               playTour('start'); return;                        // start
+    case 0xFB: playTour('continue'); return;                     // continue
+    case 0xFC: stopTour(); return;                               // stop
+  }
+  if ((status & 0xF0) === 0xB0) {                                // control change
+    const [cc, val] = [data[1], data[2]];
+    if (cc === MIDI_CC.bpm) { setInternalBpm(Math.round(ccToRange(val, ...TEMPO_RANGE.bpm))); clock.source = 'midi-cc'; updateClockChip(); }
+    else if (cc === MIDI_CC.aps) setAps(ccToRange(val, ...TEMPO_RANGE.aps));  // setting aps frees the link
+    else if (cc === MIDI_CC.div) setDiv(ccToDiv(val));
+    else if (cc === MIDI_CC.quantize) setQmode(['off', 'beat', 'bar'][Math.min(2, Math.floor(val / 128 * 3))]);
+  }
+}
 async function connectMidi() {
   const chip = document.getElementById('midi-chip');
   if (!navigator.requestMIDIAccess) { chip.textContent = 'MIDI n/a'; return; }
@@ -623,11 +1995,7 @@ async function connectMidi() {
     const acc = await navigator.requestMIDIAccess();
     let n = 0;
     const bind = (input) => {
-      input.onmidimessage = (m) => {
-        const b = m.data[0];
-        if (b === 0xF8) onMidiTick(m.timeStamp);
-        else if (b === 0xFA) { clock.tickCount = 0; clock.ticks = []; }
-      };
+      input.onmidimessage = (m) => onMidiMessage(m.data, m.timeStamp);
     };
     for (const input of acc.inputs.values()) { bind(input); n++; }
     acc.onstatechange = (e) => { if (e.port.type === 'input' && e.port.state === 'connected') bind(e.port); };
@@ -643,8 +2011,8 @@ const CHORD_MAP = {
   pin: 'pin', hd: 'hide', del: 'delete', nbr: 'select-neighbors',
   fit: 'fit', lay: 'relayout', add: 'add-node', un: 'show-hidden',
   sp: 'spread', cl: 'cluster', ds: 'clear-selection',
-  red: 'color:#e5484d', blu: 'color:#4f7cc9', tea: 'color:#45b3a8',
-  vio: 'color:#8e7cc3', gld: 'color:#c9a227',
+  red: 'color:signal', blu: 'color:sky', tea: 'color:calm',
+  vio: 'color:royal', gld: 'color:gold',
 };
 const burst = { evts: [], timer: null };
 function chordKey(e) {
@@ -676,30 +2044,67 @@ function finalizeBurst() {
   meterHud();
 }
 function chordContext() {
-  if (store.selection.size > 1) {
-    const ids = [...store.selection];
-    return { type: 'selection', targetIds: ids, position: centroid(ids) };
+  // The selection can outlive its nodes — delete and hide both remove nodes,
+  // and select-neighbors on an empty target used to insert a stale id. Resolve
+  // against the store rather than trusting the set, or the next chord throws
+  // reading .x of undefined and silently ends the burst.
+  const ids = [...store.selection].filter((id) => store.nodes.has(id));
+  if (ids.length !== store.selection.size) {
+    store.selection.clear(); ids.forEach((id) => store.selection.add(id));
   }
-  if (store.selection.size === 1) {
-    const id = [...store.selection][0], n = store.nodes.get(id);
-    return { type: 'node', targetIds: [id], position: { x: n.x, y: n.y } };
+  if (ids.length > 1) return { type: 'selection', targetIds: ids, position: centroid(ids) };
+  if (ids.length === 1) {
+    const n = store.nodes.get(ids[0]);
+    return { type: 'node', targetIds: ids, position: { x: n.x, y: n.y } };
   }
   return { type: 'canvas', targetIds: [], position: toWorld(VW() / 2, VH() / 2) };
 }
 
-const KIND_COLOR = { gov: '#4f7cc9', py: '#8e7cc3', web: '#45b3a8', android: '#6aa84f', new: '#c9a227' };
+/* ---------- theme layer ----------
+ * Colour lives in CSS custom properties and nowhere else (theme-tokens
+ * record §1). Nodes and intents carry TOKEN NAMES; the renderer resolves
+ * them through the active theme. That is what lets a recorded intent
+ * replay correctly under a theme that did not exist when it was recorded. */
+const THEMES = ['radical', 'dark', 'light', 'contrast'];
+/* radical is the default: a soft deep-indigo ground with neon accents and one
+ * deliberately warm, non-neon hue. A reader whose system asks for light gets
+ * light instead — a neon dark theme forced on someone who set a light
+ * preference is a preference being overruled, not a mood. */
+function defaultTheme() { return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'radical'; }
+const SWATCH_TOKENS = ['sky', 'calm', 'royal', 'gold', 'signal'];
+const KIND_TOKEN = { gov: 'kind-gov', py: 'kind-py', web: 'kind-web', android: 'kind-android', new: 'kind-new' };
+let tokenCache = new Map();
+function token(name) {                       // '--rad-' is implied
+  if (tokenCache.has(name)) return tokenCache.get(name);
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--rad-' + name).trim();
+  tokenCache.set(name, v);
+  return v;
+}
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') || defaultTheme();
+}
+function setTheme(name) {
+  document.documentElement.setAttribute('data-theme', name);
+  tokenCache = new Map();                    // resolved values are now stale
+  try { localStorage.setItem('rad.theme', name); } catch { /* private mode */ }
+  const chip = document.getElementById('theme-chip');
+  if (chip) { chip.textContent = '◐ ' + name; chip.setAttribute('aria-label', `Colour theme: ${name}. Activate to cycle.`); }
+  render();
+  if (menu.active) drawMenu();
+}
+
 const STACK = [
   ['qm', 'gov'], ['qmcp', 'py'], ['dossier', 'py'], ['apothecary', 'py'],
   ['alfred', 'py'], ['al-admin', 'py'], ['otto', 'py'],
   ['codecartographer', 'web'], ['benchmark', 'web'],
-  ['qmetronome', 'android'], ['radial-menu', 'new'], ['g0', 'gov'],
+  ['qmetronome', 'android'], ['rad', 'new'], ['g0', 'gov'],
 ];
 const LINKS = [
   ['qm', 'codecartographer'], ['qm', 'qmetronome'], ['qm', 'apothecary'], ['qm', 'alfred'],
   ['qm', 'qmcp'], ['qm', 'dossier'], ['qm', 'benchmark'], ['qm', 'otto'],
   ['alfred', 'otto'], ['alfred', 'al-admin'],
-  ['codecartographer', 'radial-menu'], ['qmetronome', 'radial-menu'],
-  ['qm', 'g0'], ['radial-menu', 'g0'], ['dossier', 'qmcp'],
+  ['codecartographer', 'rad'], ['qmetronome', 'rad'],
+  ['qm', 'g0'], ['rad', 'g0'], ['dossier', 'qmcp'],
 ];
 
 const VW = () => document.documentElement.clientWidth || innerWidth;
@@ -710,7 +2115,7 @@ function seedGraph() {
   STACK.forEach(([id, kind], i) => {
     const a = (-90 + i * 360 / STACK.length) * Math.PI / 180;
     store.nodes.set(id, {
-      id, label: id, kind, color: KIND_COLOR[kind],
+      id, label: id, kind, colorToken: KIND_TOKEN[kind],
       x: cx + R * Math.cos(a), y: cy + R * Math.sin(a),
       hidden: false, pinned: false, ghost: id === 'g0',
     });
@@ -766,7 +2171,9 @@ function applyIntent(intent) {
       }
       break;
     case 'select-neighbors': {
-      const id = ids[0]; store.selection.clear(); store.selection.add(id);
+      const id = ids[0];
+      if (!store.nodes.has(id)) break;      // no target: a no-op, not a corrupt selection
+      store.selection.clear(); store.selection.add(id);
       store.edges.forEach(e => {
         if (e.source === id) store.selection.add(e.target);
         if (e.target === id) store.selection.add(e.source);
@@ -777,7 +2184,7 @@ function applyIntent(intent) {
     case 'edit-label': { const e = store.edges.find(e => e.id === ids[0]); if (e) { const L = ['', 'governs', 'depends', 'informs']; e.label = L[(L.indexOf(e.label) + 1) % L.length]; } break; }
     case 'add-node': {
       const id = 'node-' + (++nodeSeq);
-      store.nodes.set(id, { id, label: id, kind: 'new', color: KIND_COLOR.new,
+      store.nodes.set(id, { id, label: id, kind: 'new', colorToken: KIND_TOKEN.new,
         x: context.position.x, y: context.position.y, hidden: false, pinned: false, ghost: false });
       break;
     }
@@ -800,7 +2207,11 @@ function applyIntent(intent) {
     case 'select':   ids.forEach(id => store.selection.add(id)); break;
     case 'deselect': ids.forEach(id => store.selection.delete(id)); break;
     default:
-      if (action.startsWith('color:')) nodesOf().forEach(n => n.color = action.slice(6));
+      if (action.startsWith('color:')) {
+        const tok = action.slice(6);
+        if (!SWATCH_TOKENS.includes(tok)) break;      // unknown token is not a colour
+        nodesOf().forEach(n => n.colorToken = 'swatch-' + tok);
+      }
   }
   intent.cost = meters.inputsSinceIntent;
   meters.costs.push(intent.cost);
@@ -814,8 +2225,8 @@ function applyIntent(intent) {
 
 /* ---------- resolver: context -> MenuSpec ---------- */
 function resolveMenu(ctx) {
-  const colorSub = ['#4f7cc9', '#45b3a8', '#8e7cc3', '#c9a227', '#e5484d'].map(c => (
-    { id: 'color-' + c, label: '', swatch: c, action: 'color:' + c }));
+  const colorSub = SWATCH_TOKENS.map(tok => (
+    { id: 'color-' + tok, label: tok, swatch: 'swatch-' + tok, action: 'color:' + tok }));
   if (ctx.type === 'node') {
     const n = store.nodes.get(ctx.targetIds[0]);
     return { title: n.label, items: [
@@ -878,6 +2289,11 @@ function fitView() {
 }
 
 function render() {
+  // render() rebuilds every node element, which drops document.activeElement.
+  // Capture the focused node id and restore it after, so a drag, a theme
+  // change, or any other re-render cannot silently eject a keyboard user
+  // from the graph.
+  const hadFocus = document.activeElement?.getAttribute?.('data-node') ?? null;
   gEdges.textContent = ''; gNodes.textContent = '';
   for (const e of store.edges) {
     const a = store.nodes.get(e.source), b = store.nodes.get(e.target);
@@ -906,10 +2322,14 @@ function render() {
       tabindex: n.id === focusNodeId ? '0' : '-1', role: 'button',
       'aria-label': `node ${n.label}${store.selection.has(n.id) ? ', selected' : ''}`,
     });
-    g.appendChild(el('circle', { class: 'body', r: 19, fill: n.color, 'fill-opacity': 0.85 }));
+    g.appendChild(el('circle', { class: 'body', r: 19, fill: token(n.colorToken), 'fill-opacity': 0.85 }));
     if (n.pinned) g.appendChild(el('circle', { class: 'pin', r: 3.5, cx: 13, cy: -13 }));
     const t = el('text', { y: 34 }); t.textContent = n.label; g.appendChild(t);
     gNodes.appendChild(g);
+  }
+  if (hadFocus) {
+    const again = gNodes.querySelector(`[data-node="${hadFocus}"]`);
+    if (again) again.focus({ preventScroll: true });
   }
 }
 
@@ -949,12 +2369,16 @@ function openMenu(ctx, screenX, screenY, mode) {
 function feed(ev) {
   const a = menu.active; if (!a) return;
   const fx = step(a.machine, ev);
-  meters.l2 += fx.length;
+  // L2 is "state-machine transitions" (metrics record §2). One transition can
+  // emit several effects, so effects are a different quantity and are metered
+  // as one; conflating them made cross-platform comparison at L2 meaningless.
+  if (fx.length) meters.l2++;
+  meters.fx += fx.length;
   for (const f of fx) {
     if (f.t === 'highlight') {
       if (navigator.vibrate && f.i != null) navigator.vibrate(8);
       drawMenu();
-      announce(f.i != null ? mItems(a.machine)[f.i].label : '');
+      announce(f.label || '');       // carried by the effect; never re-resolved
     }
     if (f.t === 'open' || f.t === 'submenu' || f.t === 'back') drawMenu();
     if (f.t === 'commit') {
@@ -966,12 +2390,13 @@ function feed(ev) {
   }
 }
 
+/* The page's single live region. It is in the markup rather than created on
+ * demand, and it is the ONLY announcer: the intent log, the tour progress
+ * counter and the vectors button used to be live regions too, so a screen
+ * reader received four competing streams during a tour. */
 function announce(text) {
-  // lightweight live region for screen readers
-  let lr = document.getElementById('sr-live');
-  if (!lr) { lr = document.createElement('div'); lr.id = 'sr-live'; lr.setAttribute('aria-live', 'polite');
-    lr.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)'; document.body.appendChild(lr); }
-  lr.textContent = text;
+  const lr = document.getElementById('sr-live');
+  if (lr) lr.textContent = text;
 }
 
 function arcPath(cx, cy, r0, r1, a0, a1) {
@@ -994,7 +2419,8 @@ function drawMenu() {
     const rm = (GEOM.r0 + GEOM.r1) / 2 + grow / 2;
     const tx = a.cx + rm * Math.cos(c * Math.PI / 180), ty = a.cy + rm * Math.sin(c * Math.PI / 180);
     if (item.swatch) {
-      g.appendChild(el('circle', { cx: tx, cy: ty, r: 11, fill: item.swatch, stroke: '#0b0d10', 'stroke-width': 2 }));
+      g.appendChild(el('circle', { cx: tx, cy: ty, r: 11, fill: token(item.swatch),
+        stroke: token('page-bg'), 'stroke-width': 2 }));
     } else {
       const t = el('text', { x: tx, y: ty, dy: '0.35em' }); t.textContent = item.label; g.appendChild(t);
       if (item.children) { const ct = el('text', { x: tx, y: ty + 15, dy: '0.35em', class: 'sub-caret' }); ct.textContent = '▸ more'; g.appendChild(ct); }
@@ -1128,13 +2554,17 @@ svg.addEventListener('pointerup', (e) => {
   }
   if (!gesture) { meterHud(); return; }
   const w = toWorld(e.clientX, e.clientY);
+  // Selection is an intent like any other: it goes through dispatchIntent so it
+  // is quantized when Q is on and contributes a TTC sample. Calling applyIntent
+  // directly made the most frequent interaction on the page the one absent from
+  // every latency figure the README prints.
   if (!gesture.moved && gesture.kind === 'node') {          // tap = selection intent
     const id = gesture.id;
-    applyIntent({ action: store.selection.has(id) ? 'deselect' : 'select',
-      context: { type: 'node', targetIds: [id], position: w }, itemId: null });
+    dispatchIntent({ action: store.selection.has(id) ? 'deselect' : 'select',
+      context: { type: 'node', targetIds: [id], position: w }, itemId: null }, e.timeStamp);
   } else if (!gesture.moved && gesture.kind === 'pan') {    // tap empty = clear selection
     if (store.selection.size)
-      applyIntent({ action: 'clear-selection', context: { type: 'canvas', targetIds: [], position: w }, itemId: null });
+      dispatchIntent({ action: 'clear-selection', context: { type: 'canvas', targetIds: [], position: w }, itemId: null }, e.timeStamp);
   }
   gesture = null;
   meterHud();
@@ -1151,6 +2581,10 @@ svg.addEventListener('contextmenu', (e) => {
 
 svg.addEventListener('wheel', (e) => {
   e.preventDefault();
+  // Continuous navigation is metered at L0/L1 and deliberately NOT charged to
+  // IPA (metrics record §1's v0 exclusion). Metered at neither is not the same
+  // as excluded from one.
+  meters.l0++; meters.l1++;
   const k = Math.min(3, Math.max(0.3, view.k * (e.deltaY < 0 ? 1.12 : 0.89)));
   view.x = e.clientX - (e.clientX - view.x) * (k / view.k);
   view.y = e.clientY - (e.clientY - view.y) * (k / view.k);
@@ -1160,7 +2594,7 @@ svg.addEventListener('wheel', (e) => {
 /* ---------- keyboard adapter ---------- */
 addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
-  if (menu.active && e.key === 'Tab') { e.preventDefault(); return; }   // focus trap (ADR-003)
+  if (menu.active && e.key === 'Tab') { e.preventDefault(); return; }   // focus trap: rad interaction contract §3
   // roving node focus: arrows walk the graph, Enter opens the menu there
   if (!menu.active && document.activeElement?.hasAttribute?.('data-node')) {
     const dirs = { ArrowRight: 0, ArrowDown: 90, ArrowLeft: 180, ArrowUp: -90 };
@@ -1168,8 +2602,7 @@ addEventListener('keydown', (e) => {
       e.preventDefault();
       meters.l0++; meters.l1++;
       focusNode(nearestNode(focusNodeId, dirs[e.key]));
-      render();
-      focusNode(focusNodeId);
+      render();                      // render() preserves focus; no second call needed
       return;
     }
     if (e.key === 'Enter') {
@@ -1293,15 +2726,24 @@ const motion = {
  * adapters use (openMenu/feed/dispatchIntent/chord burst), so a
  * demo is an execution of the product path, not a movie of one.
  * ============================================================ */
+/* Choreography, as fractions of ONE action period. These are the only tuned
+ * numbers left in the demo driver: unitless, tempo-independent, and named.
+ * Raising `aps` speeds the whole tour up with its shape intact, which is what
+ * a reader is actually learning. (tempo record §2) */
+const BEATS = { travel: 0.45, dwell: 0.35, settle: 0.30, ring: 0.22, hold: 0.55, read: 0.8 };
+function beatMs(k) { return REDUCED ? 0 : Math.round(BEATS[k] * actionPeriod()); }
+
 const demo = {
   busy: false,
   screenOf(id) { const n = store.nodes.get(id); return { x: n.x * view.k + view.x, y: n.y * view.k + view.y }; },
   sleep: (ms) => new Promise((r) => setTimeout(r, REDUCED ? 0 : ms)),
+  /** wait(k) — hold for a named choreography beat at the current tempo. */
+  wait(k) { return this.sleep(beatMs(k)); },
   async longPressNode(id) {
     const p = this.screenOf(id);
-    await motion.finger([p]);
+    await motion.finger([p], beatMs('travel'));
     motion.ripple(p.x, p.y);
-    await this.sleep(320);
+    await this.wait('dwell');
     meters.inputsSinceIntent++;              // the demo press is one honest input
     lastInputT = performance.now();
     openMenu(contextAt(document.querySelector(`[data-node="${id}"]`) ?? svg, p.x, p.y), p.x, p.y, 'tracking');
@@ -1311,9 +2753,9 @@ const demo = {
   async sweep(deg, r = 76) {
     const a = menu.active; if (!a) return;
     const to = { x: a.cx + r * Math.cos(deg * Math.PI / 180), y: a.cy + r * Math.sin(deg * Math.PI / 180) };
-    await motion.finger([to]);
+    await motion.finger([to], beatMs('travel'));
     feed({ type: 'move', r, thetaDeg: deg });
-    await this.sleep(220);
+    await this.wait('hold');
     return to;
   },
   async release(deg, r = 76) {
@@ -1323,12 +2765,12 @@ const demo = {
   },
   async tapNode(id) {
     const p = this.screenOf(id);
-    await motion.finger([p]); motion.ripple(p.x, p.y);
+    await motion.finger([p], beatMs('travel')); motion.ripple(p.x, p.y);
     meters.inputsSinceIntent++;              // one tap, one input
     lastInputT = performance.now();
-    applyIntent({ action: store.selection.has(id) ? 'deselect' : 'select',
-      context: { type: 'node', targetIds: [id], position: { ...store.nodes.get(id) } }, itemId: null });
-    await this.sleep(160); motion.fingerHide();
+    dispatchIntent({ action: store.selection.has(id) ? 'deselect' : 'select',
+      context: { type: 'node', targetIds: [id], position: { ...store.nodes.get(id) } }, itemId: null }, lastInputT);
+    await this.wait('settle'); motion.fingerHide();
   },
   async chord(word) {
     // Inject a machine-fast burst through the real chord pipeline.
@@ -1343,7 +2785,7 @@ const demo = {
     finalizeBurst();
     motion.spotlight(document.getElementById('log'));
   },
-  async spotChip(id) { const el = document.getElementById(id); motion.spotlight(el); await this.sleep(240); return el; },
+  async spotChip(id) { const el = document.getElementById(id); motion.spotlight(el); await this.wait('ring'); return el; },
 };
 
 /* ============================================================
@@ -1354,19 +2796,19 @@ const demo = {
 const TOUR = [
   { ch: 'Orient', steps: [
     { id: 'graph', label: 'This graph is live', desc: 'A small map of the quaternionmedia stack. Drag nodes, drag the background to pan, pinch or scroll to zoom.',
-      run: async () => { const p = demo.screenOf('qm'); await motion.finger([{ x: p.x - 60, y: p.y - 60 }, p]); motion.ripple(p.x, p.y); await demo.sleep(200); motion.fingerHide(); } },
+      run: async () => { const p = demo.screenOf('qm'); await motion.finger([{ x: p.x - 60, y: p.y - 60 }, p], beatMs('travel')); motion.ripple(p.x, p.y); await demo.wait('settle'); motion.fingerHide(); } },
     { id: 'intents', label: 'Everything is an intent', desc: 'Every action — even selecting — lands in the log strip below with its input cost (⊙). Nothing mutates the graph except intents.',
-      run: async () => { await demo.tapNode('dossier'); motion.spotlight(document.getElementById('log')); await demo.sleep(300); await demo.tapNode('dossier'); } },
+      run: async () => { await demo.tapNode('dossier'); motion.spotlight(document.getElementById('log')); await demo.wait('read'); await demo.tapNode('dossier'); } },
     { id: 'meters', label: 'The meters are the contract', desc: 'Top right: raw events (L0) → gestures (L1) → machine transitions (L2) → intents (L3), plus inputs-per-action and latency percentiles. Budgets live in the governed records.',
-      run: async () => { motion.spotlight(document.getElementById('hud')); await demo.sleep(400); } },
+      run: async () => { motion.spotlight(document.getElementById('hud')); await demo.wait('read'); } },
   ]},
   { ch: 'The menu', steps: [
     { id: 'open', label: 'Open it anywhere', desc: 'Long-press (touch) or right-click (pointer) a node, an edge, or empty canvas — the menu is context-aware.',
-      run: async () => { await demo.longPressNode('qm'); await demo.sleep(500); feed({ type: 'close' }); motion.fingerHide(); } },
+      run: async () => { await demo.longPressNode('qm'); await demo.wait('hold'); feed({ type: 'close' }); motion.fingerHide(); } },
     { id: 'release-select', label: 'One gesture, one action', desc: 'Keep the finger down: drag onto a wedge and release to commit. A full verb costs one input.',
       run: async () => { await demo.longPressNode('qm'); await demo.sweep(0); await demo.release(0); } },
     { id: 'submenu', label: 'Submenus, still one gesture', desc: 'Drag through the outer rim on a parented wedge (Color) and the ring is replaced in place. Release on a swatch.',
-      run: async () => { await demo.longPressNode('alfred'); await demo.sweep(45); await demo.sweep(45, 130); await demo.sleep(200); await demo.sweep(-90, 76); await demo.release(-90); } },
+      run: async () => { await demo.longPressNode('alfred'); await demo.sweep(45); await demo.sweep(45, 130); await demo.wait('settle'); await demo.sweep(-90, 76); await demo.release(-90); } },
     { id: 'cancel', label: 'Bail out anytime', desc: 'Release in the hub, tap outside, or press Escape — the dead zone is a first-class cancel affordance, not an error.',
       run: async () => { await demo.longPressNode('otto'); await demo.sweep(180); await demo.sweep(180, 10); await demo.release(180, 10); } },
   ]},
@@ -1374,39 +2816,55 @@ const TOUR = [
     { id: 'kbd-menu', label: 'Full keyboard path', desc: 'm opens the menu on the selection (or canvas), arrows rotate the highlight, Enter commits, Escape backs out. No pointer required, ever.',
       run: async () => {
         openMenu({ type: 'canvas', targetIds: [], position: toWorld(VW() / 2, VH() / 2) }, VW() / 2, VH() / 2, 'idle');
-        for (const k of ['ArrowRight', 'ArrowRight']) { feed({ type: 'key', key: k }); await demo.sleep(260); }
+        for (const k of ['ArrowRight', 'ArrowRight']) { feed({ type: 'key', key: k }); await demo.wait('hold'); }
         lastInputT = performance.now(); feed({ type: 'key', key: 'Enter' });
       } },
     { id: 'kbd-focus', label: 'Focus walks the graph', desc: 'Tab into the canvas, then arrow keys move node focus geometrically (green ring); Enter opens the menu right there. Screen readers hear each node.',
-      run: async () => { focusNode('qm'); await demo.sleep(300); focusNode(nearestNode('qm', 0)); await demo.sleep(300); focusNode(nearestNode(focusNodeId, 90)); await demo.sleep(200); } },
+      run: async () => { focusNode('qm'); await demo.wait('read'); focusNode(nearestNode('qm', 0)); await demo.wait('read'); focusNode(nearestNode(focusNodeId, 90)); await demo.wait('settle'); } },
     { id: 'calm', label: 'Calm by preference', desc: 'prefers-reduced-motion collapses every animation to its end state — including this tour’s ghost finger. Contrast, touch-target, and forced-colors rules are in the stylesheet, not an afterthought.',
-      run: async () => { motion.spotlight(document.querySelector('.t-head')); announce(REDUCED ? 'Reduced motion is ON — demos jump to results.' : 'Reduced motion is honored when your system requests it.'); await demo.sleep(300); } },
+      run: async () => { motion.spotlight(document.querySelector('.t-head')); announce(REDUCED ? 'Reduced motion is ON — demos jump to results.' : 'Reduced motion is honored when your system requests it.'); await demo.wait('read'); } },
   ]},
   { ch: 'Chords — expert speed', steps: [
     { id: 'chord-what', label: 'Words as single acts', desc: 'A CharaChorder (or any fast chorded input) emits a whole word in one press over plain HID. The vocabulary is prefix-free, so a known word commits on its last keystroke — zero recognition delay.',
       run: async () => { await demo.tapNode('qmcp'); await demo.chord('pin'); } },
     { id: 'chord-verbs', label: 'Same verbs, no menu', desc: 'Chords bind to the identical intent vocabulary the menu resolves — pin, hd, del, nbr, fit, lay, add, sp, cl, un, ds, and colors red blu tea vio gld. IPA is 1 for any verb at any depth.',
-      run: async () => { await demo.chord('gld'); await demo.sleep(250); await demo.chord('nbr'); } },
+      run: async () => { await demo.chord('gld'); await demo.wait('settle'); await demo.chord('nbr'); } },
     { id: 'chord-typed', label: 'Typing still works', desc: 'The same word typed slowly resolves too, flagged ⌨ at its honest cost. Experts get the floor; everyone gets the vocabulary.',
-      run: async () => { motion.spotlight(document.getElementById('log')); announce('Try typing n-b-r slowly with a node selected.'); await demo.sleep(300); } },
+      run: async () => { motion.spotlight(document.getElementById('log')); announce('Try typing n-b-r slowly with a node selected.'); await demo.wait('read'); } },
   ]},
-  { ch: 'On the clock', steps: [
-    { id: 'clock', label: 'A clock lives here', desc: 'The ♩ chip is an internal metronome (tap to cycle BPM). The MIDI chip listens for external MIDI clock — 24 ppqn, median-filtered tempo, phase locked per beat.',
+  { ch: 'Look and pace', steps: [
+    { id: 'themes', label: 'Colour is a token, not a hex', desc: 'Four themes — <b>radical</b> (the neon default), dark, light and a high-contrast one — are palette swaps over a single token layer. radical grounds the neon on a soft indigo rather than black, and keeps warm amber as the one hue that does not glow. Node colours, wedge fills and the swatch ring all resolve through the layer, and a <code>color:</code> intent names a token (<code>color:gold</code>), never a colour — which is why a recorded intent still means the same thing under a theme that did not exist when it was recorded.',
+      run: async () => {
+        const start = currentTheme();
+        for (const th of THEMES) { setTheme(th); await demo.wait('hold'); }
+        setTheme(start);
+        await demo.spotChip('theme-chip');
+      } },
+    { id: 'speed', label: 'Three speed axes, not one dial', desc: 'Tempo (bpm) sets the beat grid; Grid subdivides it; Actions (aps) is how fast this tour issues intents. Actions is linked to tempo by default and can be freed — a slow clock with dense actions is a real configuration. Defaults are deliberately slow: 60 bpm, one action per second.',
+      run: async () => {
+        motion.spotlight(document.querySelector('.t-speed'));
+        const was = { bpm: clock.bpm, div: tempo.div, linked: tempo.linked, aps: tempo.aps };
+        for (const b of [60, 120, 60]) { setInternalBpm(b); await demo.wait('hold'); }
+        setDiv(2); await demo.wait('hold'); setDiv(was.div);
+        setInternalBpm(was.bpm); setLinked(was.linked); if (!was.linked) setAps(was.aps);
+        await demo.wait('settle');
+      } },
+    { id: 'clock', label: 'A clock lives here', desc: 'The ♩ chip is an internal metronome. The MIDI chip listens for external MIDI clock — 24 ppqn, median-filtered tempo, phase locked per beat — and for CC on the three speed axes, plus start/continue/stop driving this tour’s playback.',
       run: async () => { await demo.spotChip('clock-chip'); await demo.spotChip('midi-chip'); } },
     { id: 'quantize', label: 'Commit on the beat', desc: 'With Q on, intents wait for the grid and land stamped @beat+delta. Measured jitter here is well under a millisecond — graph edits as performance.',
       run: async () => {
         if (qmode === 'off') document.getElementById('q-chip').click();
         await demo.spotChip('q-chip');
         await demo.tapNode('benchmark'); await demo.chord('vio');
-        await demo.sleep(700);
+        await demo.sleep(gridPeriod() * 1.5 + 200);   // outlast one grid period, whatever the tempo
         if (qmode !== 'off') { document.getElementById('q-chip').click(); if (qmode !== 'off') document.getElementById('q-chip').click(); }
       } },
   ]},
   { ch: 'Under the hood', steps: [
     { id: 'vectors', label: 'The spec runs in-page', desc: 'The pure core (geometry, state machine, quantizer, tempo, chords) replays the conformance vectors on demand. Ports to Android or iOS are judged by the same file.',
       run: async () => { document.getElementById('conf-btn').click(); await demo.spotChip('conf-btn'); } },
-    { id: 'records', label: 'Governed, not vibed', desc: 'The interaction contract, metric budgets, and platform plans are drafts in <a href="https://github.com/quaternionmedia" target="_blank" rel="noopener">docs/records</a>; this page, its docs, and its media regenerate from one topic registry on every CI run.',
-      run: async () => { motion.spotlight(document.getElementById('hud')); announce('Numbers on this page are measurements, not copy.'); await demo.sleep(300); } },
+    { id: 'records', label: 'Governed, not vibed', desc: 'The interaction contract, metric budgets, theme tokens, and the speed axes are drafts in <code>adr/</code>, under the qm constitution; this page, its docs, and its media regenerate from one topic registry on every CI run, and CI fails if the committed copies disagree.',
+      run: async () => { motion.spotlight(document.getElementById('hud')); announce('Numbers on this page are measurements, not copy.'); await demo.wait('read'); } },
   ]},
 ];
 
@@ -1478,34 +2936,103 @@ function nearestNode(fromId, dirDeg) {
   return best ?? fromId;
 }
 
+/* ---------- scripted playback (MIDI transport drives this too) ---------- */
+const playback = { running: false, cancel: false, index: 0 };
+function allSteps() { return TOUR.flatMap((ch) => ch.steps); }
+async function playTour(from = 'start') {
+  if (playback.running) return;
+  if (from === 'start') playback.index = 0;
+  playback.running = true; playback.cancel = false;
+  document.getElementById('tour-panel').classList.add('playing');
+  document.getElementById('stop-chip').disabled = false;
+  document.getElementById('play-chip').textContent = '▶ Playing';
+  const steps = allSteps();
+  while (playback.index < steps.length && !playback.cancel) {
+    const s = steps[playback.index];
+    const li = document.getElementById('t-' + s.id);
+    li?.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' });
+    await runStep(s, li);
+    playback.index++;
+    if (!playback.cancel) await demo.wait('settle');
+  }
+  if (playback.index >= steps.length) playback.index = 0;
+  stopTour();
+}
+function stopTour() {
+  playback.running = false; playback.cancel = true;
+  document.getElementById('tour-panel')?.classList.remove('playing');
+  const stop = document.getElementById('stop-chip'), play = document.getElementById('play-chip');
+  if (stop) stop.disabled = true;
+  if (play) play.textContent = '▶ Play';
+}
+function setQmode(mode) {
+  qmode = ['off', 'beat', 'bar'].includes(mode) ? mode : 'off';
+  const c = document.getElementById('q-chip');
+  if (c) { c.textContent = 'Q ' + qmode; c.classList.toggle('on', qmode !== 'off'); }
+}
+
+/* ---------- control wiring ---------- */
 document.getElementById('clock-chip').addEventListener('click', () => {
-  const seq = [90, 120, 140, 160];
-  setInternalBpm(seq[(seq.indexOf(Math.round(clock.bpm)) + 1) % seq.length] || 120);
+  const seq = [60, 72, 90, 120, 144];                 // slow first: the default is the point
+  setInternalBpm(seq[(seq.indexOf(Math.round(clock.bpm)) + 1) % seq.length] || 60);
 });
-document.getElementById('q-chip').addEventListener('click', (e) => {
-  qmode = qmode === 'off' ? 'beat' : qmode === 'beat' ? 'bar' : 'off';
-  e.currentTarget.textContent = 'Q ' + qmode;
-  e.currentTarget.classList.toggle('on', qmode !== 'off');
-});
+document.getElementById('q-chip').addEventListener('click', () =>
+  setQmode(qmode === 'off' ? 'beat' : qmode === 'beat' ? 'bar' : 'off'));
 document.getElementById('midi-chip').addEventListener('click', connectMidi);
+document.getElementById('theme-chip').addEventListener('click', () =>
+  setTheme(THEMES[(THEMES.indexOf(currentTheme()) + 1) % THEMES.length]));
+
+document.getElementById('bpm-range').addEventListener('input', (e) => setInternalBpm(+e.target.value));
+document.getElementById('aps-range').addEventListener('input', (e) => setAps(+e.target.value));
+document.getElementById('div-select').addEventListener('change', (e) => setDiv(+e.target.value));
+document.getElementById('aps-link').addEventListener('change', (e) => setLinked(e.target.checked));
+document.getElementById('play-chip').addEventListener('click', () => playTour(playback.index ? 'continue' : 'start'));
+document.getElementById('stop-chip').addEventListener('click', stopTour);
 
 document.getElementById('tour-chip').addEventListener('click', () => setTour(!tourState.open));
 document.getElementById('tour-close').addEventListener('click', () => setTour(false));
 
+/* A skip link that only moves the scroll position is not a skip link. The
+ * panel carries tabindex="-1" so it can receive focus programmatically without
+ * entering the tab order. */
+document.querySelector('.skip').addEventListener('click', (e) => {
+  e.preventDefault();
+  const panel = document.getElementById('tour-panel');
+  if (!tourState.open) setTour(true);
+  panel.focus({ preventScroll: false });
+  announce('Tour panel');
+});
+
+/* ---------- boot ---------- */
 document.getElementById('subtitle').textContent =
-  `graph manipulation, governed · contract v${VECTORS.version}`;   // derived, never copied
+  `QM's default radial menu · contract v${VECTORS.version}`;   // derived, never copied
+
+let storedTheme = null, storedTempo = null;
+try {
+  storedTheme = localStorage.getItem('rad.theme');
+  storedTempo = JSON.parse(localStorage.getItem('rad.tempo') || 'null');
+} catch { /* private mode: fall through to defaults */ }
+setTheme(THEMES.includes(storedTheme) ? storedTheme : defaultTheme());
+
 seedGraph();
 focusNodeId = 'qm';
 render();
 fitView();
-setInternalBpm(120);
+/* Default: 60 bpm, one action per second, linked. Deliberately slow — a
+ * first-time reader has to see the gesture, and a demo paced for its author
+ * teaches nothing (tempo record §1). */
+tempo.div = storedTempo && DIVS.includes(storedTempo.div) ? storedTempo.div : 1;
+tempo.linked = storedTempo ? !!storedTempo.linked : true;
+setInternalBpm(storedTempo?.bpm ?? 60);
+if (!tempo.linked && storedTempo?.aps) setAps(storedTempo.aps);
 beatLoop();
 meterHud();
 buildTour();
 setTour(true);
+updateSpeedUI();
 if (location.hash.startsWith('#t-')) {
   const li = document.getElementById(location.hash.slice(1));
-  if (li) { li.scrollIntoView({ block: 'center' }); li.querySelector('.go').focus(); }
+  if (li) { li.scrollIntoView({ block: 'center' }); li.querySelector('.go')?.focus(); }
 }
 addEventListener('resize', () => { if (!menu.active) fitView(); });
 </script>

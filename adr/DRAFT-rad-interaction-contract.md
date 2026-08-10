@@ -1,10 +1,11 @@
-# DRAFT — Radial menu interaction contract
+# DRAFT — rad interaction contract
 
-| Status | Draft |
+| | |
 |---|---|
-| Date | 2026-08-08 |
-| Pends on | house-stack, seams-on-standard-protocols, perspective: mobile-cross-platform-governance |
-| Principle | P3 seams on standard protocols; P6 decisions documented; P9 minimal legible deliverables |
+| **Status** | Draft |
+| **Date** | 2026-08-09 |
+| **Pends on** | house-stack, seams-on-standard-protocols, perspective: mobile-cross-platform-governance |
+| **Principle** | P3 seams on standard protocols; P6 decisions documented; P9 minimal legible deliverables |
 
 ## Context
 
@@ -45,9 +46,19 @@ Intent     { action: string, context: MenuContext, itemId: string }
   matching `interaction_profiles.ts` bindings, so triggers and menu items share one
   action vocabulary.
 - Maximum 8 items per ring. Overflow is a design error, not a scrolling problem:
-  the resolver must group into a submenu.
+  the resolver must group into a submenu. **The resolver enforces this itself** —
+  it raises on a ninth item rather than rendering wedges below the touch-target
+  minimum. A ceiling that only a reviewer checks is a preference; conformant
+  implementations fail loudly, and `conformance/vectors.json` carries a case
+  asserting the failure.
 - Standard graph-manipulation vocabulary (hosts may extend, not repurpose):
   - **node**: `pin`, `hide`, `delete`, `expand`, `collapse`, `select-neighbors`, `color:*`
+  - `color:*` names a **palette token**, never a literal colour: `color:signal`,
+    not `color:#e5484d`. A hex in an intent is a platform detail smuggled into
+    the portable vocabulary — it cannot survive a theme change, a light/dark
+    switch, or a forced-colors mode, and it makes two implementations that agree
+    on meaning disagree on bytes. Token names are contract; their resolved values
+    are the theme's business (see the *rad theme tokens* draft).
   - **edge**: `delete`, `reverse`, `edit-label`
   - **canvas**: `add-node`, `fit`, `relayout`, `toggle-physics`
   - **selection**: `hide`, `spread`, `cluster`, `delete`
@@ -60,8 +71,17 @@ Intent     { action: string, context: MenuContext, itemId: string }
   function shared by the conformance vectors.
 - Radii in density-independent units: dead zone `r₀ ∈ [28, 40]`; ring band
   `r₁ − r₀ ≥ 56` so every wedge at N=8 exceeds a 44-unit touch target at mid-band
-  (benchmark ADR-002). Clamp the whole ring to the viewport by shifting the center
-  inward, never by shrinking below minimums (qmetronome safe-radius lesson).
+  (the touch-target floor in the benchmark project's records). Clamp the whole
+  ring to the viewport by shifting the center inward, never by shrinking below
+  minimums (qmetronome safe-radius lesson).
+- **A third radius, `r_cancel = 1.35 · r₁`, bounds the ring outward.** Beyond it
+  there is no target: a press, a release or a highlight at `r > r_cancel` is a
+  cancel in *both* commit styles. Without it the committing region is unbounded
+  in one style and bounded in the other, so the same point commits or cancels
+  depending on how the menu was opened — and a finger dragged clear of the menu,
+  which is the natural "I changed my mind" motion, commits the last wedge it
+  passed. The dead zone cancels inward; `r_cancel` cancels outward; the two are
+  the same affordance and are specified together.
 - Submenus **replace the ring in place** (parent label in the hub, back affordance =
   hub tap / inward move / Escape / Back). No nested popovers.
 
@@ -72,11 +92,23 @@ States: `CLOSED → PENDING → OPEN → TRACKING → (SUBMENU→OPEN…) → CO
 - **Invoke**: touch long-press (350 ms, ≤10 unit slop), pointer right-click /
   secondary, keyboard `m` on focused element. Long-press must fire while the finger
   is still down.
-- **Release-select** (touch-first): the invoking press continues — moving past `r₀`
-  highlights `angleToIndex(θ)`; release outside `r₀` commits, release inside `r₀`
-  cancels. One continuous gesture, no second tap.
-- **Tap-select**: menu opens idle; hover/move highlights; tap/click a wedge
-  commits; outside-tap or Escape cancels.
+- **Release-select** (touch-first): the invoking press continues — moving into the
+  band `r₀ < r ≤ r_cancel` highlights `angleToIndex(θ)`; release in that band
+  commits; release inside `r₀` or beyond `r_cancel` cancels. One continuous
+  gesture, no second tap.
+- **Tap-select**: menu opens idle; hover/move within the band highlights;
+  tap/click a wedge in the band commits; a press inside `r₀`, a press beyond
+  `r_cancel`, or Escape cancels.
+- **The band is identical in both styles.** Any `(r, θ)` resolves to the same
+  wedge, or to no wedge, regardless of how the menu was opened. Nothing in the
+  interaction may depend on the invoking style except *when* the commit happens
+  (on release versus on tap).
+- **A latched hub press suppresses highlighting.** Pressing inside `r₀` in
+  tap-select arms the back/cancel affordance; dragging outward from there must
+  not highlight wedges, because that press can no longer commit one. A highlight
+  that cannot be committed is the interface lying about its own next state, and
+  it is the one case where the edge-triggered haptic fires for an action that
+  will not happen.
 - **Submenu entry**: commit on a parented item enters SUBMENU; in release-select,
   crossing `r₁` outward on a parented wedge also enters it (finger stays down).
 - **Keyboard**: Left/Right (or Up/Down) rotate the highlight ±1; Enter commits;
@@ -85,6 +117,15 @@ States: `CLOSED → PENDING → OPEN → TRACKING → (SUBMENU→OPEN…) → CO
   emits a light haptic where the platform has one.
 - Highlight changes are edge-triggered (fire once per index change) — required for
   haptics and announcements.
+- **Effects are self-contained.** `step()` returns a batch, and a batch may change
+  the ring (a `submenu` effect replaces it). An effect carrying only an index is
+  therefore ambiguous by the time its consumer reads it: the index refers to the
+  ring that was current when the effect was emitted, and the consumer sees the
+  ring that is current after the batch. A `highlight` effect carries the resolved
+  `label` and `id` alongside `i`, and consumers never re-resolve an index against
+  live state. This is the general form of the "data, not closures" rule applied
+  to the effect channel: an effect that needs external state to interpret is not
+  serializable, not replayable, and not portable.
 
 ### 4. Expert input — chords are the same vocabulary
 
@@ -128,9 +169,59 @@ intents that land **on time**, not merely fast.
   high-resolution clock, so no cross-clock translation is needed.
 - **Quantize policies**: `off | next-beat | next-bar` (`nearest` defined for
   step-editing surfaces). The scheduler commits at `max(now, gridT)` — a
-  coarse timer to ~2 ms early, then a sub-millisecond spin.
+  coarse timer to a few milliseconds early, then a sub-millisecond spin. **The
+  coarse timer is re-armed on every hop rather than trusted once.** A spin
+  cannot go backwards, so a single platform timer that overshoots `gridT`
+  outright costs the whole budget for that commit; re-checking converts one
+  rare large overshoot into several small ones the spin absorbs. Measured p95
+  with one-shot arming and a 2 ms lead was 4.9 ms against a 1 ms budget.
+- **Three independent tempo axes**, because one number cannot express the two
+  things a live surface needs to set separately — how fast the grid runs, and how
+  densely it is populated:
+
+  | Axis | Range | Default | Governs |
+  |---|---|---|---|
+  | `bpm` | 30–300 | **60** | the beat grid: `beatPeriod = 60000/bpm` |
+  | `div` | ½, 1, 2, 3, 4 per beat | 1 | grid subdivision; quantize target is `beatPeriod/div` |
+  | `aps` | 0.25–8 actions/s | derived | the rate a *scripted* surface issues intents |
+
+  `aps` is **linked** to the clock by default (`aps = bpm/60 · div`, so the
+  defaults give exactly one action per second) and can be **freed** to any value
+  in range. Linked is the honest default: a demo that drifts off the clock it
+  claims to be driven by is a movie of the feature. Free is necessary because
+  demonstration pace and musical pace are not the same requirement — a slow clock
+  with dense actions is a legitimate configuration, and so is its inverse.
+- **The default is deliberately slow.** 60 bpm, `div` 1, linked — one action per
+  second. A first-time reader of a self-teaching page has to *see* the gesture,
+  and a demo paced for the author's familiarity teaches nothing. Speed is
+  available on an axis; it is not the starting position.
+- **`bpm`, `div` and `aps` are externally controllable over MIDI**, on the same
+  footing as the clock itself: continuous controllers bind to the three axes,
+  and System Real-Time transport (`0xFA` start, `0xFB` continue, `0xFC` stop)
+  drives scripted playback. Which controller numbers is a host binding rather
+  than contract; that the three axes are *reachable* over the same transport as
+  the clock is contract, because a surface whose tempo can be driven externally
+  and whose action rate cannot is not actually on the clock.
+- **Time parameters never reach the state machine.** `bpm`, `div` and `aps`
+  change scheduling and scripted pacing only. `longPressMs`, the slop radius and
+  the burst-split window are conformance-governed constants and do not scale
+  with tempo: a menu whose long-press threshold moves with the clock would make
+  every vector tempo-dependent, and the gesture grammar is not a musical
+  parameter.
 - **Budgets**: unquantized input→commit (TTC) p95 ≤ 16 ms (one frame);
-  quantized grid jitter |commit − gridT| p95 ≤ 1 ms; tempo estimate within
+  quantized grid jitter |commit − gridT| p95 ≤ 1 ms **for one intent per grid
+  point**. Several intents quantized to the same instant serialize by
+  construction — the second waits on the first's application — so their
+  measured jitter is the commit queue's cost rather than the scheduler's, and a
+  meter that mixes the two is measuring something the budget does not name.
+  Implementations report the count of intents sharing a grid point alongside
+  the percentile. **A timing budget is also a claim about the machine that
+  measured it**: the same suite measured p95 0.0 ms with three parallel
+  workers and 1.8 ms with eight, on identical code and with no intents sharing
+  a grid point. A harness that measures a latency budget while competing for
+  the CPU is measuring the harness. Budgets are verified in a pass that does
+  not share the machine, and an implementation claiming one says how it was
+  isolated; tempo estimate within
   ±0.5 BPM of a clean external clock. Meters are mandatory (see the
   interaction-efficiency-metrics record).
 - The state machine remains time-free except `longPressMs`; clocks and
@@ -179,6 +270,17 @@ claim (version-tags-are-claims). Changing a vector is amending this record.
 
 ## Revision triggers
 
+- `r_cancel = 1.35 · r₁` proves wrong on a real device — either it cancels
+  commits users intended (too tight) or a natural bail-out motion still commits
+  (too loose). The multiplier is a first estimate carried over from the value the
+  tap-select path already used; it has not been validated against a human.
+- The default 60 bpm is measured to be slower than first-time readers tolerate,
+  or the linked `aps` derivation stops matching what a demo needs.
+- A host needs `bpm`/`div`/`aps` over a transport that is not MIDI-shaped
+  (OSC, Ableton Link) — the axes should absorb it; if they cannot, amend.
+- A palette token is needed that no theme can satisfy at the contrast floor,
+  or a host needs a literal colour in an intent for a reason the token layer
+  cannot express.
 - A third commit style (e.g. dwell-select for accessibility) is requested.
 - Any implementation needs >8 items after honest grouping.
 - A chord surface needs a verb the menu can't reasonably hold (breaks the

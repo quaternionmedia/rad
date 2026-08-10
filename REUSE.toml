@@ -1,0 +1,65 @@
+version = 1
+SPDX-PackageName = "rad — Quaternion Media radial menu"
+SPDX-PackageSupplier = "Quaternion Media <peter.kagstrom@gmail.com>"
+SPDX-PackageDownloadLocation = "https://github.com/quaternionmedia/rad"
+
+# Licensing is declared here rather than as per-file SPDX headers, for the same
+# reason the qm corpus does it: the opening lines of a record are load-bearing
+# (its H1 and header table), generated media cannot carry a header at all, and
+# the symlink pointer files cannot either -- writing one writes into the target.
+# See governance/qm/records/DRAFT-outbound-licensing.md.
+#
+# Paths are matched by the last block that matches, so the exclusions at the
+# bottom win over the default at the top.
+
+# --- Executable content: the default for this repository (§3) ---------------
+# This project is mostly code. index.html is the reference implementation,
+# conformance/vectors.json is executed by every port's test runner, and the
+# harness and scripts are run rather than read.
+[[annotations]]
+path = "**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Quaternion Media"
+SPDX-License-Identifier = "Apache-2.0"
+
+# --- Project prose (§1) -----------------------------------------------------
+# Decision records, the review, and the generated guide pages are prose about
+# the work rather than the work. They follow the corpus's outbound default.
+[[annotations]]
+path = [
+  "adr/DRAFT-*.md",
+  "README.md",
+  "REVIEW.md",
+  "docs/guide/**",
+  "docs/media/**",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Quaternion Media"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+# --- Copy-forward prose templates (§2) --------------------------------------
+# Carried verbatim from project-seed/ and meant to be copied onward into
+# repositories QM does not govern. Terms that follow the copy would export QM's
+# licence into those repositories, which is what CC0 avoids. These keep the
+# licence they had in the corpus rather than acquiring this project's.
+[[annotations]]
+path = [
+  "adr/README.md",
+  "adr/TEMPLATE.md",
+  "AGENTS.md",
+  "CLAUDE.md",
+  ".github/copilot-instructions.md",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Quaternion Media"
+SPDX-License-Identifier = "CC0-1.0"
+
+# --- No outbound grant (§11) ------------------------------------------------
+# Attributed opinion substantially produced by language models under human
+# direction. QM's rights to relicense are not settled, so it is marked honestly
+# rather than swept under the default.
+[[annotations]]
+path = "perspectives/**"
+precedence = "override"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Quaternion Media"
+SPDX-License-Identifier = "LicenseRef-QM-No-Grant"

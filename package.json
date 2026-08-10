@@ -1,0 +1,26 @@
+{
+  "name": "@quaternionmedia/rad",
+  "version": "0.0.0",
+  "private": true,
+  "description": "rad \u2014 QM's default radial menu. Platform-neutral interaction contract, executable conformance vectors, and a zero-dependency reference implementation.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "pretest": "node -e \"require('fs').rmSync('docs/.staging',{recursive:true,force:true})\"",
+    "gate": "playwright test --grep-invert @timing --fail-on-flaky-tests && node scripts/check-gate.mjs",
+    "measure": "playwright test --grep @timing --workers=1 --output=test-results-timing",
+    "test": "npm run gate && npm run measure",
+    "test:all": "playwright test",
+    "test:ui": "playwright test --ui",
+    "docs": "node scripts/build-docs.mjs",
+    "sync:vectors": "node scripts/sync-vectors.mjs",
+    "palette": "node scripts/check-palette.mjs",
+    "verify": "npm test && node scripts/build-docs.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.0"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}
