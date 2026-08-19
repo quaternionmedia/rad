@@ -231,6 +231,7 @@ together.
 Drafts in flight (numberless, by title):
 
 - Interaction efficiency metrics (IPA, abstraction ledger, systemization index)
+- The menu addresses nine cells
 - Tempo-driven interaction speed
 - Unified artifact pipeline (tests = docs = README = media)
 - rad adoption and scope
