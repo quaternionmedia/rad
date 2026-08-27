@@ -73,6 +73,41 @@ Two host callbacks are **required**, and the requirement is the design:
 Per the contract, a `highlight` effect carries its own resolved `label` and
 `id`; a host must never re-resolve the index against live state.
 
+### §2b A host with no pointer addresses cells, and the seam carries them
+
+Written after *the menu addresses nine cells*, which this standard predates. §3
+below says input is polar, and that is right for a finger and unusable for a
+surface that has no finger: a terminal delivers keys, not angles, and converting
+a keystroke into an angle so the seam will accept it is a fiction the host has
+to maintain.
+
+So the seam takes a **cell** as an alternative address for the same item:
+
+```
+input({ t: 'cell', cell: 1..9 })          choose the item at that cell; 5 backs out
+input({ t: 'cellDir', dir: 'up'|... })    move to the nearest item in that direction
+```
+
+Three constraints, all of them consequences of that record rather than new
+decisions:
+
+1. **A cell and an angle name the same item, by index.** Nothing is added to
+   `MenuItem` and no host stores a cell. `placeCells(N)` derives it, and §5.4's
+   obligation covers the derivation because the `cells` cases are governed
+   vectors from `v0.6.0`.
+2. **Cell `5` is not an item and is never delivered as one.** It backs out at
+   every depth, so a host that maps it to an item is refused rather than
+   obeyed.
+3. **A cell-addressing host is not thereby a ring-rendering host.** Above four
+   items the two put the same item in different places, by up to 135°, and
+   `cellAgreesWithRing(N)` is how a host finds out which it is doing. See that
+   record's clause 4; the divergence is priced there and not re-argued here.
+
+**What this does not settle.** Whether a host that renders a ring *and* accepts
+cells should re-address its wedges, label them, or refuse the combination. One
+implementation has no pointer and the other two have no cells, so there is no
+evidence to decide it on.
+
 ### §3 Coordinates are polar and relative
 
 `input()` takes events in **ring-polar** coordinates: `r` in
@@ -101,6 +136,11 @@ MenuSpec    { title?, items: MenuItem[] }          // 1..8 items, enforced
 Intent      { action: string, context: MenuContext, itemId: string }
 Effect      { t: 'highlight'|'open'|'submenu'|'back'|'cancel', … }
 ```
+
+`Effect.t` gains no cell variant. A highlight names an item, and a host that
+addresses cells looks the cell up from the index it is given — the same
+direction of derivation §2b requires, so there is one place that knows the
+placement order and it is `rad`.
 
 `position` is in the **host's** coordinates and `rad` only carries it through —
 it is there so the host can place a new node where the menu was opened without
