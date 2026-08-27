@@ -162,8 +162,22 @@ keeping a side table. A host may extend `MenuContext.type` with its own values;
 4. **Replay `conformance/vectors.json` in the host's own test runner** and pin
    the vector version claimed. Integrating without this makes "conformant" a
    description of intent.
-5. **Report divergences as a vector first.** A behaviour the host needs that
+5. **Report divergences as a vector first, in a row somebody reads.** A
+   behaviour the host needs that
    the vectors do not cover is a proposed vector, not a local patch.
+
+   **Where the report goes**, because an obligation with no channel is a
+   preference. A host writes it as the `Pends on` row of one of its own
+   records, naming `rad`. That row already exists — the seed template requires
+   it of every `Proposed` record and the ADR lint enforces it — and the corpus
+   collects those rows across the estate, so a divergence written there is read
+   without anybody remembering to look.
+
+   The channel is in use before this clause was written: codecartographer's
+   `DRAFT-rad-integration.md` pends on `quaternionmedia/rad` PR #1, and reading
+   the collected rows is how it surfaces that the pull request it waits on
+   merged some time ago. That is the mechanism working — it makes a stale
+   dependency visible without asking anybody to audit for one.
 
 ### §6 What this standard does not yet settle
 
