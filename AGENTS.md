@@ -62,25 +62,34 @@ that a pending reconciliation changes.
 
 ## Where this project's governance actually is, today
 
-**`adr/` is at this repository's root, not inside `governance/qm`.** That is a
-known, named deviation from the model the section above describes, not a
-variation someone preferred. The submodule cannot exist yet: it requires a
-`project/rad` branch pushed to `https://github.com/quaternionmedia/qm`, and
-creating a remote branch is a human decision. `adr/DRAFT-rad-adoption-and-scope.md`
-carries the full gap list, the exact commands that close it, and what each one
-verifies.
+**`adr/` is at this repository's root, not inside `governance/qm`, and that is
+a supported configuration rather than the deviation this page used to call it.**
+The seed's own `adr-lint.yml` offers two models in its header and puts both
+behind one knob: leave `RECORDS_DIR` empty for records on `project/<name>` in
+the corpus, or set it to a local path when a project keeps `adr/` in its own
+repository. This repository sets `RECORDS_DIR: adr`. The lint runs, and it runs
+against these records.
 
-Until that lands:
+The submodule is mounted. `.gitmodules` pins `governance/qm` to `project/rad`,
+that branch exists on the qm remote, and `python governance/qm/project-seed/ci/adr_lint.py
+--records-dir adr --index adr/README.md --base-ref origin/main` is clean —
+which is what the paragraph above once said could not happen yet.
 
-- The records in `adr/` are real and binding on this project. Their **location**
-  is provisional; their content and discipline are not.
-- `.github/workflows/adr-lint.yml` is the verbatim seed workflow and **will fail**
-  until the submodule exists, because the lint runs out of it. That failure is
-  the gap reporting itself. Do not edit the workflow to make it pass.
-- `tests/governance.spec.mjs` enforces the same drafting discipline locally in
-  the meantime. It is a stopgap and says so; delete it when the submodule lands,
-  because two copies of one check is the drift the seed arrangement exists to
-  avoid.
+Two things follow, and neither is done:
+
+- **`tests/governance.spec.mjs` has outlived its own stated condition.** Its
+  first line says to delete it when the submodule lands. It has landed. Until
+  somebody does, this repository runs two copies of one check — the drift that
+  file's own header says the seed arrangement exists to avoid. Deleting it is a
+  decision about coverage, because the lint and the spec do not assert
+  identical properties; read both before removing either.
+- **The org's status document reports this project with zero records.**
+  `governance-status.yaml` counts a project's `adr/` on its corpus branch, and
+  `project/rad` carries only the seeded `README.md` and `TEMPLATE.md`. The
+  records here are invisible from the org side, so this project reads as having
+  decided nothing while holding more drafts than most. The generator now also
+  reports the `RECORDS_DIR` a project declares, so the zero can be read; the
+  census itself still counts one place.
 
 ## Working in this repository
 
