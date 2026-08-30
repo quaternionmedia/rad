@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Draft |
 | **Date** | 2026-08-09 |
-| **Pends on** | version-tags-are-claims; P6 decisions documented; P9 minimal legible deliverables |
+| **Pends on** | version-tags-are-claims; `decisions-are-documented`; `minimal-legible-deliverables` |
 
 ## Context
 

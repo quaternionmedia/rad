@@ -5,7 +5,7 @@
 | **Status** | Draft |
 | **Date** | 2026-08-09 |
 | **Pends on** | house-stack, seams-on-standard-protocols, perspective: mobile-cross-platform-governance |
-| **Principle** | P3 seams on standard protocols; P6 decisions documented; P9 minimal legible deliverables |
+| **Principle** | `seams-on-standard-protocols`; `decisions-are-documented`; `minimal-legible-deliverables` |
 
 ## Context
 

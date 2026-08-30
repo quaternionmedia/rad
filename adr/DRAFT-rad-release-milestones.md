@@ -5,7 +5,7 @@
 | **Status** | Proposed |
 | **Date** | 2026-08-09 |
 | **Pends on** | the scope of the org-wide authentication/authorization effort, which fixes what §3.4 must deliver |
-| **Principle** | P6 decisions documented; P8 systems over heroics |
+| **Principle** | `decisions-are-documented`; `systems-over-heroics` |
 
 ## Context
 

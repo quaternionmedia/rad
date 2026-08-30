@@ -5,7 +5,7 @@
 | **Status** | Draft |
 | **Date** | 2026-08-09 |
 | **Pends on** | the *rad interaction contract* draft |
-| **Principle** | P6 decisions documented; P9 minimal legible deliverables |
+| **Principle** | `decisions-are-documented`; `minimal-legible-deliverables` |
 
 ## Context
 

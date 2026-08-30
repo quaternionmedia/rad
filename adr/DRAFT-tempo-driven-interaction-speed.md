@@ -5,7 +5,7 @@
 | **Status** | Draft |
 | **Date** | 2026-08-09 |
 | **Pends on** | the *rad interaction contract* draft §5 |
-| **Principle** | P3 seams on standard protocols; P6 decisions documented |
+| **Principle** | `seams-on-standard-protocols`; `decisions-are-documented` |
 
 ## Context
 

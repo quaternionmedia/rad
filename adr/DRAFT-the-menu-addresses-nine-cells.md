@@ -5,7 +5,7 @@
 | **Status** | Proposed |
 | **Date** | 2026-08-19 |
 | **Pends on** | Nothing — ready for ratification |
-| **Principle** | P3 seams on standard protocols; P6 decisions documented; P9 minimal legible deliverables |
+| **Principle** | `seams-on-standard-protocols`; `decisions-are-documented`; `minimal-legible-deliverables` |
 
 ## Context
 
@@ -105,7 +105,7 @@ at the edge, the chord in both orders, and the `N ≤ 4` agreement bound from
 clause 4. The existing polar cases stand unchanged, which is the check on the
 claim that a cell is an address and not a second geometry.
 
-**Each of those cases has been seen to fail**, per P16. The mutation that
+**Each of those cases has been seen to fail**, per `a-check-is-evidence-after-it-fails`. The mutation that
 matters most reproduces the defect clause 5 exists for: degrading
 `cellStepToItem` to a raw grid walk gives
 

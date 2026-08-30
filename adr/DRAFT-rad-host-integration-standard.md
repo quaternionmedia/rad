@@ -5,7 +5,7 @@
 | **Status** | Draft |
 | **Date** | 2026-08-09 |
 | **Pends on** | the *rad interaction contract* draft; named as the deliverable of `v0.0.2` by the *rad release milestones* draft |
-| **Principle** | P3 seams on standard protocols; P9 minimal legible deliverables |
+| **Principle** | `seams-on-standard-protocols`; `minimal-legible-deliverables` |
 
 ## Context
 
