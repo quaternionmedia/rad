@@ -28,25 +28,33 @@ count.
 
 ## Decision
 
-### §1 Two version lines, never conflated
+### §1 One coordinate, carried by the contract and claimed by a tag
 
-| Line | Where | Increments when | Today |
-|---|---|---|---|
-| **Product** | git tags `vMAJOR.MINOR.PATCH`, mirrored in `package.json` | a release is cut per §2 | **`0.0.0` — unreleased** |
-| **Vectors** | `conformance/vectors.json` `version` | the executable contract changes | whatever that file declares — `0.4.0` as of 2026-08-09 |
+| Thing | Where | Means |
+|---|---|---|
+| **The coordinate** | `conformance/vectors.json` `version` | the contract every repository on this surface is proven against |
+| **A claim on it** | a git tag `vMAJOR.MINOR.PATCH`, mirrored in `package.json` | *this repository* proved that coordinate |
 
-These are different numbers about different things and they will not converge.
-The vector line is the one the contract tells implementations to pin — "an
-implementation pins the vector version it claims" — and it moved several times
-before any release existed, which is correct: the contract was being written.
-The product line starts at zero because nothing has been released.
+There is one number. `records/DRAFT-a-shared-tag-asserts-interoperability.md`
+is why: repositories carrying the same tag assert that those commits were
+proven to work together, so a separate product line would leave a reader
+holding two numbers and no way to tell whether the two artifacts fit.
 
-The vector figure above carries a date because it moves independently of this
-record. Read it from `conformance/vectors.json`; do not quote it from here.
+The two roles are still distinct and the distinction is a state, not a second
+line. The contract can be *edited* to a coordinate nobody has claimed yet —
+that is drafting, and it is the normal condition while a contract is being
+written. Nobody tags a coordinate until every implementation on the surface has
+replayed it, per §4 of that record. So an unclaimed coordinate is visible as a
+vector version above the highest tag, rather than as a number that means
+something different.
 
-`package.json` is set to `0.0.0` and stays there until a human cuts `v0.0.1`.
-An unreleased package advertising `0.3.0` is the failure the org record
-describes: a number asserting whatever the reader assumes.
+`package.json` is `0.0.0` and stays there until a tag is cut. An unreleased
+package advertising a number is the failure the org record describes: a figure
+asserting whatever the reader assumes.
+
+Read the current coordinate from `conformance/vectors.json`. Quoting it here
+would be a second copy of a number that moves, which is the failure this clause
+exists to prevent.
 
 ### §2 What a `rad` tag asserts
 
@@ -71,10 +79,21 @@ them as validation. Stating this is the point: the same suite measured grid
 jitter p95 at 0.0 ms and 1.8 ms depending only on how many browsers shared the
 CPU.
 
-**§2.3 The annotation names the consumer.** Every `rad` tag from `v0.0.2`
-onward names the consuming project that proves it, and the commit in that
-project which does so. A milestone whose consumer has not shipped is not
-claimable, however finished `rad` itself looks (§4).
+**§2.3 The annotation names every consumer that proves it.** A `rad` tag names
+the consuming projects whose replay discharges the coordinate, and the commit
+in each that does so. Not one: where implementations cover different parts of
+the vector set, no single one proves the contract, and an annotation naming one
+would credit a host that had demonstrated part.
+
+The set is measured rather than assumed. Today it partitions — one host replays
+the eleven cell-addressing cases and has no pointer; the other replays the
+forty-seven ring, pointer and timing cases and accepts no cell input; the two
+are disjoint and together cover all fifty-eight. Each reports what it could not
+execute by name, so the annotation can be written from the runs rather than
+from anybody's recollection.
+
+A milestone whose consumers have not all shipped is not claimable, however
+finished `rad` itself looks (§4).
 
 ### §3 The milestones
 
