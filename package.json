@@ -15,6 +15,7 @@
     "docs": "node scripts/build-docs.mjs",
     "sync:vectors": "node scripts/sync-vectors.mjs",
     "palette": "node scripts/check-palette.mjs",
+    "test:messaging": "node --test messaging/",
     "verify": "npm test && node scripts/build-docs.mjs"
   },
   "devDependencies": {

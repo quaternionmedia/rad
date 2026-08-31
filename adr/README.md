@@ -241,3 +241,4 @@ Drafts in flight (numberless, by title):
 - rad platform implementation plans
 - rad release milestones
 - rad theme tokens
+- rad-to-rad messaging is an encrypted host seam, never core

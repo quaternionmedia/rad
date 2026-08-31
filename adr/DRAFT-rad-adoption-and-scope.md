@@ -112,7 +112,7 @@ The eight rows `adr/README.md` requires, answered honestly.
 |---|---|
 | **Baseline component audit** | §6 below. One runtime dependency, one dev dependency |
 | **Licence gates, cumulatively** | This project ships no image and one package ecosystem (npm). The npm path is gated by `package-lock.json` plus `reuse lint`, green and blocking since 2026-08-09. There is no SBOM-per-image obligation because there is no image; if a container ever ships, that obligation attaches then |
-| **Service inventory** | **None.** `rad` reaches no third-party service at runtime. It is a static file; there is no network call in `index.html`. This row is satisfied by the inventory being empty and by that being verifiable |
+| **Service inventory** | **None for the deliverable.** `index.html` reaches no third-party service at runtime; it is a static file with no network call, and that is verifiable. The opt-in `messaging/` host seam is the one place a network call is intended, and it is governed separately by `adr/DRAFT-rad-to-rad-messaging.md`: it ships no relay, carries its own selected crypto engine, and a host that never loads it inherits none of this |
 | **Quarterly upstream scan** | **Gap.** Not scheduled. With one pinned upstream (`@playwright/test`, MIT) the cost of the gap is low, and low is not zero. Compliance is a scheduled workflow watching the pin's licence file and archive status |
 | **Seam protocol named** | §2 table |
 | **Control-plane instance record** | **This project has no control plane, and that is the answer.** `rad` is a contract, a vector file and a static page; nothing orchestrates anything. The size smell that would change this: if `index.html` acquires a server, a persistence layer, or any runtime that has to be operated, the seam has stopped being a seam |
@@ -201,8 +201,10 @@ rather than discovered later.
 - Any step in §4 completes — the record is amended to reflect it, and C11 closes.
 - A second implementation of the contract ships, making this project a spec
   provider rather than a spec-plus-implementation. Scope (§1) is then wrong.
-- `index.html` acquires a runtime dependency, a network call, or a server —
-  §6 stops being nearly empty and the control-plane answer in §5 changes.
+- `index.html` — the deliverable — acquires a runtime dependency, a network
+  call, or a server. The `messaging/` seam is not that: it is off the deliverable,
+  opt-in, and governed by its own record. This trigger fires only if the base
+  file itself changes, and §6 stops being nearly empty if it does.
 - The core-extraction draft is decided either way (closes or entrenches C13).
 - A second package ecosystem or a container image enters the project — the
   licence-gate row in §5 becomes two obligations rather than one.
