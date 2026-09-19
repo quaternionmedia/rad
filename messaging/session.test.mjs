@@ -1,7 +1,7 @@
 /**
  * rad-to-rad messaging — the conformance suite.
  *
- *   node --test messaging/
+ *   node --test messaging/session.test.mjs
  *
  * §6 of `adr/DRAFT-rad-to-rad-messaging.md` says an encryption layer never seen
  * to withhold content is a claim, not a fact. These tests are where it is seen
