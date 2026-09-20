@@ -5,7 +5,7 @@
 | **Status** | Proposed |
 | **Date** | 2026-08-09 |
 | **Pends on** | a human decision on whether the single-file deliverable becomes a build output (§3) |
-| **Principle** | P3 seams on standard protocols; P9 minimal legible deliverables |
+| **Principle** | `seams-on-standard-protocols`; `minimal-legible-deliverables` |
 
 ## Context
 

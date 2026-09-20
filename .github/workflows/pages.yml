@@ -46,6 +46,14 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci
 
+      # The rad-to-rad messaging suite runs on node's own test runner, so
+      # Playwright's testDir never reaches messaging/session.test.mjs: without
+      # this step the encryption conformance clauses execute in no gate and a
+      # broken seal/open would merge green. Pure node, so it needs no browser
+      # and runs before the heavy install steps.
+      - name: Messaging conformance (node --test)
+        run: npm run test:messaging
+
       - name: Install browser
         run: npx playwright install --with-deps chromium
 

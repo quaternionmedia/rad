@@ -5,7 +5,7 @@
 | **Status** | Draft |
 | **Date** | 2026-08-09 |
 | **Pends on** | house-stack, seams-on-standard-protocols, perspective: mobile-cross-platform-governance |
-| **Principle** | P3 seams on standard protocols; P6 decisions documented; P9 minimal legible deliverables |
+| **Principle** | `seams-on-standard-protocols`; `decisions-are-documented`; `minimal-legible-deliverables` |
 
 ## Context
 
@@ -74,6 +74,27 @@ Intent     { action: string, context: MenuContext, itemId: string }
   (the touch-target floor in the benchmark project's records). Clamp the whole
   ring to the viewport by shifting the center inward, never by shrinking below
   minimums (qmetronome safe-radius lesson).
+- **Fitting, when the viewport is smaller than the ring.** The clause above is
+  silent on two cases, and both are reachable on a phone in landscape or a
+  small embedded surface:
+  - *The viewport cannot hold `r1`.* Shrink `r1` toward `r0 + 56` — the band
+    minimum already stated above, at which a wedge at N=8 still clears a
+    44-unit target. Shrinking **toward** a minimum is not shrinking below one,
+    and it is strictly better than painting a ring that runs off the edge.
+  - *The viewport cannot hold even that.* **Centre the ring on the axis that
+    cannot fit.** A clamp whose lower bound exceeds its upper bound is
+    degenerate, and an implementation that resolves it by taking either bound
+    pushes the ring off the opposite edge — measured on a 320x260 viewport, a
+    naive clamp placed the centre 20 units above the top. Centring makes the
+    overflow symmetric, so no wedge is less reachable than another. The axes
+    are decided independently: a viewport may hold the ring horizontally and
+    not vertically, and usually does.
+- **The machine judges the ring it was opened with.** `r0`, `r1` and
+  `r_cancel` are properties of an open menu, not of the process. An
+  implementation that fits the ring per-viewport and then tests the committing
+  band against an unfitted global draws one ring and judges another; the
+  divergence is invisible until a small viewport makes it large. Geometry
+  travels with the machine.
 - **A third radius, `r_cancel = 1.35 · r₁`, bounds the ring outward.** Beyond it
   there is no target: a press, a release or a highlight at `r > r_cancel` is a
   cancel in *both* commit styles. Without it the committing region is unbounded
@@ -243,6 +264,20 @@ and `splitBursts`. A conformant implementation:
    pattern);
 3. passes the behavioral checklist: 44-unit targets, keyboard path, screen-reader
    labels, dead-zone cancel, ≤8 items.
+4. **matches the constants no vector can reach.** `longPressMs` and `slop` are
+   unpinnable from traces by construction — the machine takes an explicit
+   `longpress` event, and slop lives in the input adapter and never in
+   `step()`. A port could therefore use any long-press threshold and pass every
+   vector truthfully. They are checklist items, verified by hand against a
+   device, and an implementation states the values it used.
+
+**Every other constant in the geometry and time blocks is pinned to ±1% by a
+vector, and `tests/pinning.spec.mjs` proves it by perturbing each one and
+requiring the suite to notice.** That test exists because `cancelScale` was
+found satisfied by anything in `[1.2038, 1.8518]` — a suite can pass while the
+constant it governs moves, which makes conformance an assertion about a file
+rather than about behaviour. A constant added to the core later fails that test
+until it is either pinned or listed as knowingly unpinnable.
 
 Vectors are versioned with semver; implementations pin the vector version they
 claim (version-tags-are-claims). Changing a vector is amending this record.

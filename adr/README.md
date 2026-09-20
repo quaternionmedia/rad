@@ -236,7 +236,9 @@ Drafts in flight (numberless, by title):
 - Unified artifact pipeline (tests = docs = README = media)
 - rad adoption and scope
 - rad core extraction
+- rad host integration standard
 - rad interaction contract
 - rad platform implementation plans
 - rad release milestones
 - rad theme tokens
+- rad-to-rad messaging is an encrypted host seam, never core

@@ -6,6 +6,31 @@
  * traces carry per-event `t` timestamps the inline copy had dropped — and
  * nothing compared them, which made "conformant" unfalsifiable for the one
  * implementation everything else is measured against.
+ *
+ * THE CELL MUTATIONS, v0.6.0, quoted as they printed. The `cells` suite is new
+ * and a suite only ever seen green has been watched rather than tested, so each
+ * clause of adr/DRAFT-the-menu-addresses-nine-cells.md was broken in the page
+ * core and the failing case recorded here.
+ *
+ *   PLACEMENT clockwise from the top instead of cardinals first
+ *     cell placement: four items sit at the cardinals — place 4 → [8,9,6,3]
+ *     every cardinal is reachable by direction alone, N=4 — n=4 8 left → 8, want 4
+ *
+ *   cellStepToItem degraded to a raw grid walk — the defect clause 5 exists for
+ *     every cardinal is reachable by direction alone, N=4 — n=4 8 left → 7, want 4
+ *     a greyed cell is not a landing place — n=4 8 left → 7, want 8
+ *
+ *   grid movement wrapping instead of clamping at the edge
+ *     grid movement clamps at the edge rather than wrapping — 7 left → 9, want 7
+ *
+ *   cellAgreesWithRing forced true, i.e. clause 4's identity claimed at every N
+ *     cell direction is the wedge angle at four items and not above — n=5 agrees true
+ *
+ *   placeCells admitting a ninth item
+ *     cell placement: eight is legal, nine will not fit — place 9 threw false
+ *
+ *   the centre made placeable
+ *     the centre never holds an item, at any menu size — n=5 placed an item in the centre
  */
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';

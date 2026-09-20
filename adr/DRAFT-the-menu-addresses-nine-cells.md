@@ -5,7 +5,7 @@
 | **Status** | Proposed |
 | **Date** | 2026-08-19 |
 | **Pends on** | Nothing — ready for ratification |
-| **Principle** | P3 seams on standard protocols; P6 decisions documented; P9 minimal legible deliverables |
+| **Principle** | `seams-on-standard-protocols`; `decisions-are-documented`; `minimal-legible-deliverables` |
 
 ## Context
 
@@ -53,12 +53,23 @@ rendering of that addressing, not the addressing itself.**
    four-item menu sits at up, right, down and left — where a ring puts it — and
    the corners fill only when there are more than four.
 
-4. **Polar geometry becomes a rendering of the cells.** A pointer implementation
-   draws the eight as a ring exactly as it does today; the cell number is the
-   name of a wedge rather than a replacement for it. `angleToIndex` is unchanged
-   and the existing conformance vectors remain valid, because an index still
-   identifies an item — the addition is that a cell also identifies it, by a
-   name that does not move when the menu does.
+4. **A cell addresses an item; it does not place one on a ring.** `angleToIndex`
+   is unchanged and every existing conformance vector remains valid, because an
+   index still identifies an item — the addition is that a cell identifies the
+   same item by a name that does not move when the menu does. A pointer host
+   draws item *i* at its wedge; a keyboard host reaches item *i* at its cell;
+   both are looking up the same index.
+
+   **The two agree at four items and part company above.** Cardinals-first
+   placement and clockwise-from-the-top are the same order for `N ≤ 4` and a
+   different one for `N > 4`: at eight items, item 3 is drawn at 45° and
+   addressed as cell `4`, which points at 180° — a gap of 135°. This is the
+   price of clause 3, and it is paid knowingly. The alternative is below.
+
+   So a cell number is **not** the name of a wedge, except at `N ≤ 4` where it
+   happens to coincide. `cellAgreesWithRing(N)` reports which case a host is in
+   rather than leaving it to be assumed, and the vectors pin it true at 1 and 4
+   and false at 5 and 8, so no port can adopt one order and claim the other.
 
 5. **A keyboard host binds all three, and the digit is the point.**
    - a digit chooses its cell directly, from anywhere;
@@ -87,9 +98,21 @@ terminal implementation at an IPA of 2, against 3 for the first item and more
 for the rest under a walk. `interaction-efficiency-metrics` is unchanged; this
 gives its numbers something to improve.
 
-**Conformance gains a cell↔angle mapping** and cases for it: placement order,
-the centre holding nothing, reachability of every cell by direction alone, and
-the chord window on both sides. The existing polar cases stand.
+**Conformance carries the cell layer**, in `conformance/vectors.json` from
+`v0.6.0`: placement order, the centre holding nothing at every size,
+reachability of every occupied cell by direction alone, grid movement clamping
+at the edge, the chord in both orders, and the `N ≤ 4` agreement bound from
+clause 4. The existing polar cases stand unchanged, which is the check on the
+claim that a cell is an address and not a second geometry.
+
+**Each of those cases has been seen to fail**, per `a-check-is-evidence-after-it-fails`. The mutation that
+matters most reproduces the defect clause 5 exists for: degrading
+`cellStepToItem` to a raw grid walk gives
+
+    every cardinal is reachable by direction alone, N=4 — n=4 8 left → 7, want 4
+
+— left from `8` landing on the empty corner rather than reaching `4`. Five
+others are recorded beside the suite in `tests/conformance.spec.mjs`.
 
 **Eight remains the ceiling** and the resolver still raises on a ninth. That
 clause is not relaxed; the grid has exactly eight cells that can hold an item,
@@ -99,12 +122,28 @@ which makes the ceiling structural instead of a rule to remember.
 remain conformant, because the mapping is derivable from the index it already
 has.
 
+**A host that renders both must pick which one it is showing.** Above four
+items the ring and the grid put the same item in different places, so a surface
+drawing a ring while announcing cell numbers would be telling a reader two
+different things. Nothing here forbids that; the vectors make it visible.
+
 ## Alternatives considered
 
 **Keep polar and add keyboard shortcuts.** Numbering derived from the item index
 gives a position no stable name: the same key reaches a different thing when the
 resolver returns a different menu, which is the failure the numbering exists to
 prevent.
+
+**Place clockwise from the top instead of cardinals first** — `8, 9, 6, 3, 2,
+1, 4, 7`. Then a cell's direction is its wedge's angle at every size, the
+mapping in clause 4 is total, and `cellAgreesWithRing` is a constant. Rejected,
+and it is the closest call in this record: it buys identity at every `N` at the
+cost of the `N ≤ 4` case, where a four-item menu would sit at up, up-right,
+right and down-right — a quarter of the screen — instead of at the cardinals.
+Four-item menus are the common case and the cardinals are what a reader
+expects, so the divergence is priced above four rather than the crowding priced
+below it. **Revisit this if a pointer host reports the divergence as a defect**;
+the trade is genuine and this record picked a side.
 
 **Grid only, drop the ring.** Loses the gesture the component is named for. A
 radial menu under a thumb is not improved by being a grid, and this record does

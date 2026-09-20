@@ -5,7 +5,7 @@
 | **Status** | Proposed |
 | **Date** | 2026-08-09 |
 | **Pends on** | the scope of the org-wide authentication/authorization effort, which fixes what §3.4 must deliver |
-| **Principle** | P6 decisions documented; P8 systems over heroics |
+| **Principle** | `decisions-are-documented`; `systems-over-heroics` |
 
 ## Context
 
@@ -28,22 +28,33 @@ count.
 
 ## Decision
 
-### §1 Two version lines, never conflated
+### §1 One coordinate, carried by the contract and claimed by a tag
 
-| Line | Where | Increments when | Today |
-|---|---|---|---|
-| **Product** | git tags `vMAJOR.MINOR.PATCH`, mirrored in `package.json` | a release is cut per §2 | **`0.0.0` — unreleased** |
-| **Vectors** | `conformance/vectors.json` `version` | the executable contract changes | `0.3.0` |
+| Thing | Where | Means |
+|---|---|---|
+| **The coordinate** | `conformance/vectors.json` `version` | the contract every repository on this surface is proven against |
+| **A claim on it** | a git tag `vMAJOR.MINOR.PATCH`, mirrored in `package.json` | *this repository* proved that coordinate |
 
-These are different numbers about different things and they will not converge.
-The vector line is the one the contract tells implementations to pin — "an
-implementation pins the vector version it claims" — and it moved three times
-before any release existed, which is correct: the contract was being written.
-The product line starts at zero because nothing has been released.
+There is one number. `records/DRAFT-a-shared-tag-asserts-interoperability.md`
+is why: repositories carrying the same tag assert that those commits were
+proven to work together, so a separate product line would leave a reader
+holding two numbers and no way to tell whether the two artifacts fit.
 
-`package.json` is set to `0.0.0` and stays there until a human cuts `v0.0.1`.
-An unreleased package advertising `0.3.0` is the failure the org record
-describes: a number asserting whatever the reader assumes.
+The two roles are still distinct and the distinction is a state, not a second
+line. The contract can be *edited* to a coordinate nobody has claimed yet —
+that is drafting, and it is the normal condition while a contract is being
+written. Nobody tags a coordinate until every implementation on the surface has
+replayed it, per §4 of that record. So an unclaimed coordinate is visible as a
+vector version above the highest tag, rather than as a number that means
+something different.
+
+`package.json` is `0.0.0` and stays there until a tag is cut. An unreleased
+package advertising a number is the failure the org record describes: a figure
+asserting whatever the reader assumes.
+
+Read the current coordinate from `conformance/vectors.json`. Quoting it here
+would be a second copy of a number that moves, which is the failure this clause
+exists to prevent.
 
 ### §2 What a `rad` tag asserts
 
@@ -68,10 +79,21 @@ them as validation. Stating this is the point: the same suite measured grid
 jitter p95 at 0.0 ms and 1.8 ms depending only on how many browsers shared the
 CPU.
 
-**§2.3 The annotation names the consumer.** Every `rad` tag from `v0.0.2`
-onward names the consuming project that proves it, and the commit in that
-project which does so. A milestone whose consumer has not shipped is not
-claimable, however finished `rad` itself looks (§4).
+**§2.3 The annotation names every consumer that proves it.** A `rad` tag names
+the consuming projects whose replay discharges the coordinate, and the commit
+in each that does so. Not one: where implementations cover different parts of
+the vector set, no single one proves the contract, and an annotation naming one
+would credit a host that had demonstrated part.
+
+The set is measured rather than assumed. Today it partitions — one host replays
+the eleven cell-addressing cases and has no pointer; the other replays the
+forty-seven ring, pointer and timing cases and accepts no cell input; the two
+are disjoint and together cover all fifty-eight. Each reports what it could not
+execute by name, so the annotation can be written from the runs rather than
+from anybody's recollection.
+
+A milestone whose consumers have not all shipped is not claimable, however
+finished `rad` itself looks (§4).
 
 ### §3 The milestones
 
@@ -87,8 +109,9 @@ has reviewed the whole of it, and a human has driven it on real hardware.
 sufficient, and it is sufficient because the claim is correspondingly narrow.
 
 **Discharged by:**
-- `npm run gate` green and deterministic — **met**: 259 tests, no skips, no
-  retries, no flakes.
+- `npm run gate` green and deterministic — **met**, and re-established on every
+  run rather than quoted: `scripts/check-gate.mjs` prints the count and fails
+  on any skip, rerun or flake.
 - `conformance/vectors.json` replayed against the page core, and the inline
   block in sync with it — **met**.
 - Human review of the change set — **outstanding**, and it is the substance of
@@ -113,17 +136,44 @@ this project exists to produce.
 
 **Claim:** the contract survives contact with hosts `rad` does not control.
 
-**Proving consumers:** **apothecary** and **benchmark**.
+**Proving consumers:** **codecartographer**, **apothecary** and **benchmark**.
+
+codecartographer was added on 2026-08-09, after it had integrated. It was
+missing by oversight rather than by decision, and the oversight was visible as
+a disagreement between two records written the same day: the *rad platform
+plans* draft opens "Order of work: modern web first (host exists:
+codecartographer)" and gives it a five-step integration plan and a definition
+of done, while this record did not name it at all. The platform plan was
+right. codecartographer also has the strongest claim available on the merits —
+the standard vocabulary in the contract's §1 is a *graph-manipulation*
+vocabulary, and it is the only host with a graph.
+
+This does not relax the second-data-point rule below. codecartographer's
+integration is partly the author marking his own homework: this project's
+contract was written with codecartographer's legacy menu as its worked
+example, so the seam was shaped against that host before that host used it.
+apothecary and benchmark remain required, and the two-independent-hosts
+requirement is unchanged.
 
 **Discharged by:**
-- An **integration standard** that does not yet exist and is the real
-  deliverable of this milestone: how a host mounts `rad`, supplies a
-  `MenuContext`, receives `Intent`s, and routes them through its own state
-  layer without the menu touching the scene. The contract already forbids the
-  menu mutating anything; it says nothing about the seam a host attaches to.
+- An **integration standard**, now drafted as *rad host integration standard*:
+  how a host mounts `rad`, supplies a `MenuContext`, receives `Intent`s, and
+  routes them through its own state layer without the menu touching the scene.
+  The contract already forbids the menu mutating anything; it said nothing
+  about the seam a host attaches to.
+  Its own conformance evidence is `tests/integration.spec.mjs`, which drives a
+  synthetic host — its own scene, reducer, vocabulary and camera — entirely
+  through the public surface, and asserts the host's scene is byte-identical
+  across a whole gesture. **A synthetic host is not a consumer**: it proves the
+  seam is usable by something that is not the reference page, and it cannot
+  prove the seam is *well shaped*, because the same person designed both sides.
 - That standard implemented in **both** hosts. Two rather than one because the
   org's own second-data-point rule applies: one integration is an anecdote and
   cannot distinguish "the standard works" from "the standard fits apothecary".
+- The four items §6 of that standard lists as unsettled either decided or still
+  honestly unneeded — synchronous `resolve`, capabilities, concurrent sessions,
+  and renderer replacement. A host hitting one of them is the cheapest
+  information this milestone can produce.
 - Each host replaying `conformance/vectors.json` in its own runner, pinning the
   vector version it claims.
 - At least one divergence found by a host and captured as a **new vector**
@@ -131,7 +181,55 @@ this project exists to produce.
   vector added has probably not been integrated hard enough, and the run that
   produces no finding is itself worth recording.
 
-**Does not claim:** anything about non-web platforms. Both consumers are web.
+  **First one in, from codecartographer, 2026-08-09.** `cancelScale` was
+  unpinned by the behavioural suite: changing it from 1.35 to 1.60 failed no
+  vector. It was caught by asserting the vector set's own `geometry` block
+  against the port's constants — not by any behavioural case, which is the more
+  useful half of the finding: the constants block was doing work the traces
+  were not.
+
+  This matters more than a typical gap because the *rad interaction contract*
+  draft's own revision triggers say 1.35 "has not been validated against a
+  human". The constant most likely to be tuned is the one nothing is watching,
+  and tuning it silently changes where a gesture cancels.
+
+  **The undetected window was wider than first reported.** Measured by scanning
+  the multiplier until a vector fails: `[1.2038, 1.8518]`, not `[1.3043,
+  1.413)`. The narrower figure assumed all four `r_cancel` probes constrained
+  the default, but the two at `r1=92` carry their own `geom` override — which
+  sets `cancelScale` inline — so they pin the value *within the case* and
+  constrain the default not at all. Only the `r1=108` probes bear on it:
+  `130 ≤ 108·cs` and `200 > 108·cs`.
+
+  That is worth stating as a general property rather than a correction. **A
+  vector carrying a `geom` override tests the override path and cannot double
+  as a pin on the defaults.** Any future case that overrides geometry inherits
+  the same blind spot.
+
+  **Resolved, and generalised.** The proposed boundary pair is applied
+  (r=145.7 commits, r=145.9 cancels at r1=108), and a sweep asked the same
+  question of every constant in the geometry and time blocks. Four were
+  unpinned, not one. Three are now pinned by boundary cases — `chordGapMs`,
+  `burstSplitMs`, `topInset` — and two, `longPressMs` and `slop`, are
+  unpinnable from core traces by construction: the machine takes an explicit
+  `longpress` event, and slop lives in the input adapter and never reaches
+  `step()`. Those two became checklist items in the contract's Conformance
+  section, which is what that section is for.
+
+  `tests/pinning.spec.mjs` now perturbs every constant on every run and
+  requires the suite to notice, so the class of defect closes rather than the
+  instance. It also fails when a constant is added to the core and listed in
+  neither category, which is how this stays true.
+
+  Applying the vector rather than leaving it proposed is a departure from the
+  integration standard's §5.5, and the reason is that §5.5 governs a *host*
+  reporting a divergence in behaviour. This changed no behaviour: it made an
+  existing clause — `r_cancel = 1.35 · r₁`, already written in the contract —
+  checkable. This project's own rule is the one that applies, and it says to
+  capture at the cheap tier first.
+
+**Does not claim:** anything about non-web platforms. All three consumers are
+web.
 
 #### v0.0.3 — the first non-web platform
 
@@ -227,10 +325,10 @@ there is none. `1.0.0` is not scheduled and is not this record's business.
 - The version line becomes a statement about evidence rather than about effort,
   and the gap between "finished" and "proven" becomes visible instead of
   arguable.
-- Two milestones create work that does not exist yet: the integration standard
-  (`v0.0.2`) and the core extraction the import-boundary lint needs
-  (`v0.0.3`). Naming them here is the point — both were implicit and neither
-  was scheduled.
+- Two milestones created work that did not exist. The integration standard is
+  now drafted and proven against a synthetic host; the core extraction the
+  import-boundary lint needs is still a pending decision. Naming them was the
+  point — both were implicit and neither was scheduled.
 - `v0.0.4` reopens three obligations the adoption record currently answers with
   "none". Accepted, and written down before the work rather than discovered
   during it.

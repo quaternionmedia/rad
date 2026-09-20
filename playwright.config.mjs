@@ -58,7 +58,7 @@ export default defineConfig({
       // touch.spec.mjs is deliberately absent: it asserts coarse-pointer rules
       // that do not apply to a mouse. Excluding the file is how those run
       // unconditionally where they mean something, instead of skipping here.
-      testMatch: /(contract|conformance|a11y|theme|speed|metrics|governance)\.spec\.mjs/,
+      testMatch: /(contract|conformance|a11y|theme|speed|metrics|governance|ring|integration|pinning)\.spec\.mjs/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 860 }, hasTouch: false, isMobile: false, colorScheme: 'dark' },
     },
   ],

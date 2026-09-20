@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Draft |
 | **Date** | 2026-08-09 |
-| **Pends on** | version-tags-are-claims; P6 decisions documented; P9 minimal legible deliverables |
+| **Pends on** | version-tags-are-claims; `decisions-are-documented`; `minimal-legible-deliverables` |
 
 ## Context
 
@@ -17,7 +17,7 @@ the in-app help (rendering the *live* composable), the generated user guide,
 and the screenshot/video tests — with the topic id doubling as the media
 filename, and Roborazzi set to re-record on every ordinary test run into a
 tracked docs directory. rad has now reproduced the pattern in a second
-stack (Playwright/Node): `tests/topics.mjs` + `tests/run.mjs`. Two instances,
+stack (Playwright/Node): `tests/topics.mjs` plus a Playwright project. Two instances,
 per the second-data-point rule, is a record.
 
 ## Decision

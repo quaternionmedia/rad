@@ -220,8 +220,14 @@ export const TOPICS = [
       // fast path is the one normally taken.
       if (chorded.length < Math.ceil(expected * 0.75))
         f.push(`only ${chorded.length}/${expected} bursts arrived machine-fast`);
-      const worst = Math.max(...chorded.map(i => i.ttc ?? 0));
-      if (worst > 16) f.push(`chord TTC ${worst.toFixed(1)}ms, budget 16ms`);
+      // No TTC assertion here, deliberately. The budget is p95 <= 16 ms and this
+      // asserted the WORST case, which is both stricter than the record and
+      // wall-clock dependent — it measured 18.0 ms once and would have failed
+      // the deterministic gate for a reason the code did not cause.
+      // tests/metrics.spec.mjs asserts the p95 under @timing, where a
+      // clock-reading test belongs, and scripts/build-docs.mjs refuses to
+      // publish a percentile that busts its budget.
+      if (!chorded.length) f.push('no burst was classified as chorded, so no TTC sample exists');
       return f;
     },
   },

@@ -77,8 +77,8 @@ the full transcript is in `REVIEW.md` at this repository's root.
 | C4 | The grid-jitter gate asserted 5 ms while the record and the README both state p95 ≤ 1 ms | interaction-efficiency-metrics §4 | Assertion `Math.abs(g.deltaMs) <= 5` against a documented budget of 1 | **Closed.** The suite asserts the record's number |
 | C5 | The deploy gate ran only on push to `main`, so no pull request was ever verified | decision-record-discipline; the corpus's "everything arrives as a pull request" | `pages.yml` triggers: `push: branches: [main]`, `workflow_dispatch` | **Closed.** `pull_request` trigger added; the pinned lockfile install replaced an unpinned `npm install` |
 | C6 | Committed `README.md` and `docs/media/` could be arbitrarily stale with CI green | unified-artifact-pipeline — "staleness = redness" | No comparison between regenerated and committed artifacts anywhere in CI | **Closed, with a stated limit.** `build-docs --check` fails the build when the committed README or any guide page disagrees with a fresh run. It compares *structure*: measured values are masked, because "numbers are measurements" means they change every run, and screenshots are excluded, because CI renders on Ubuntu and a contributor does not. Media staleness remains a review question, which is what the pipeline record already assumes |
-| C7 | The harness deleted tracked output before establishing it could regenerate it | P9 minimal legible deliverables; general repository hygiene | Running `tests/run.mjs` on a machine without `ffmpeg`: exit 1, sixteen tracked files deleted, seven modified | **Closed.** Generation writes to a staging directory and swaps on success; `ffmpeg` is optional |
-| C8 | Accessibility claims were verified by existence checks; the skip link did not move focus | P9; the contract's own accessibility checklist | `activeElement === #tour-panel` is `false` after activating the skip link; panel has no `tabindex` | **Closed.** Behavioural assertions replace presence assertions |
+| C7 | The harness deleted tracked output before establishing it could regenerate it | `minimal-legible-deliverables`; general repository hygiene | Running `tests/run.mjs` on a machine without `ffmpeg`: exit 1, sixteen tracked files deleted, seven modified | **Closed.** Generation writes to a staging directory and swaps on success; `ffmpeg` is optional |
+| C8 | Accessibility claims were verified by existence checks; the skip link did not move focus | `minimal-legible-deliverables`; the contract's own accessibility checklist | `activeElement === #tour-panel` is `false` after activating the skip link; panel has no `tabindex` | **Closed.** Behavioural assertions replace presence assertions |
 | C9 | The destructive action's label failed WCAG AA contrast | the contract's behavioural checklist | Computed 4.17:1 for `--danger` on `--wedge`; AA for normal text is 4.5:1 | **Closed.** Contrast is a test, over every theme, at the threshold for the rendered size |
 | C10 | Code cited record numbers belonging to another project's corpus (`ADR-002`, `ADR-003`) | decision-record-discipline — numbers are assigned at ratification and are local to a project | Two comments in `index.html` | **Closed.** Citations are by title |
 | C11 | Project records sat at `docs/records/`, not in `adr/` on a `project/rad` branch of the governance submodule | the corpus's branch-per-project model | Directory layout | **Open — shape closed, location open.** Records are in `adr/` with the seed's lifecycle. The location depends on §4 |
@@ -112,7 +112,7 @@ The eight rows `adr/README.md` requires, answered honestly.
 |---|---|
 | **Baseline component audit** | §6 below. One runtime dependency, one dev dependency |
 | **Licence gates, cumulatively** | This project ships no image and one package ecosystem (npm). The npm path is gated by `package-lock.json` plus `reuse lint`, green and blocking since 2026-08-09. There is no SBOM-per-image obligation because there is no image; if a container ever ships, that obligation attaches then |
-| **Service inventory** | **None.** `rad` reaches no third-party service at runtime. It is a static file; there is no network call in `index.html`. This row is satisfied by the inventory being empty and by that being verifiable |
+| **Service inventory** | **None for the deliverable.** `index.html` reaches no third-party service at runtime; it is a static file with no network call, and that is verifiable. The opt-in `messaging/` host seam is the one place a network call is intended, and it is governed separately by `adr/DRAFT-rad-to-rad-messaging.md`: it ships no relay, carries its own selected crypto engine, and a host that never loads it inherits none of this |
 | **Quarterly upstream scan** | **Gap.** Not scheduled. With one pinned upstream (`@playwright/test`, MIT) the cost of the gap is low, and low is not zero. Compliance is a scheduled workflow watching the pin's licence file and archive status |
 | **Seam protocol named** | §2 table |
 | **Control-plane instance record** | **This project has no control plane, and that is the answer.** `rad` is a contract, a vector file and a static page; nothing orchestrates anything. The size smell that would change this: if `index.html` acquires a server, a persistence layer, or any runtime that has to be operated, the seam has stopped being a seam |
@@ -136,8 +136,8 @@ expensive to satisfy elsewhere.
 
 `rad` is **unreleased**. `package.json` reads `0.0.0` and no tag exists; the
 `0.3.0` that sat there asserted a release nobody cut. `conformance/vectors.json`
-stays at `0.3.0`, which is a separate line the contract tells implementations to
-pin. The *rad release milestones* draft settles what each tag will claim and
+carries a separate line the contract tells implementations to pin — read the
+current value from that file rather than from here. The *rad release milestones* draft settles what each tag will claim and
 which consuming project proves it.
 
 Two entries in §5 above are answered "none" only while the deliverable is a
@@ -201,8 +201,10 @@ rather than discovered later.
 - Any step in §4 completes — the record is amended to reflect it, and C11 closes.
 - A second implementation of the contract ships, making this project a spec
   provider rather than a spec-plus-implementation. Scope (§1) is then wrong.
-- `index.html` acquires a runtime dependency, a network call, or a server —
-  §6 stops being nearly empty and the control-plane answer in §5 changes.
+- `index.html` — the deliverable — acquires a runtime dependency, a network
+  call, or a server. The `messaging/` seam is not that: it is off the deliverable,
+  opt-in, and governed by its own record. This trigger fires only if the base
+  file itself changes, and §6 stops being nearly empty if it does.
 - The core-extraction draft is decided either way (closes or entrenches C13).
 - A second package ecosystem or a container image enters the project — the
   licence-gate row in §5 becomes two obligations rather than one.
