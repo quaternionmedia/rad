@@ -95,10 +95,15 @@ consequence of a rule already written rather than a new one:
    host.
 3. **Refused, not obeyed, when the resolver gets it wrong.** An authored-only
    verb arriving enabled on a derived graph is a contract violation, and `rad`
-   raises at `openAt` exactly as it raises on a ninth item: a ceiling that only
-   a reviewer checks is a preference, and so is this. The check reads the
-   `action` string and the `graph` field, both plain data, and touches nothing
-   else in the spec — content stays the host's.
+   raises **wherever it asserts a ring** — at `openAt` for the root and at
+   `enterSub` for every submenu — exactly as it raises on a ninth item: a
+   ceiling that only a reviewer checks is a preference, and so is this. The
+   root alone is not enough: an authored-only verb nested under a submenu item
+   walks past a check that reads only the root ring and commits from one
+   level in, which a reviewer of this record did on the first day with
+   `Edit ▸ Reverse` over a derived graph. The check reads the `action` string
+   and the `graph` field, both plain data, and touches nothing else in the
+   spec — content stays the host's.
 
 The cost is a wedge on every edge ring and one on every canvas ring in a host
 with a derived graph, and codecartographer's canvas ring sits at the contract's
@@ -154,7 +159,8 @@ written before the behaviour, per `AGENTS.md`'s second rule.
       { "graph": "derived",  "items": [{ "id": "lbl", "label": "Label", "action": "edit-label" }], "expectThrows": true },
       { "graph": "derived",  "items": [{ "id": "src", "label": "Source", "action": "view-source" }], "expectThrows": false },
       { "graph": "authored", "items": [{ "id": "rev", "label": "Reverse", "action": "reverse" }], "expectThrows": false },
-      { "items": [{ "id": "add", "label": "Add node", "action": "add-node" }], "expectThrows": false }
+      { "items": [{ "id": "add", "label": "Add node", "action": "add-node" }], "expectThrows": false },
+      { "graph": "derived",  "items": [{ "id": "edit", "label": "Edit", "children": [{ "id": "rev", "label": "Reverse", "action": "reverse" }] }], "expectThrows": true, "at": "enterSub" }
     ]
   },
   {
@@ -252,8 +258,10 @@ applying change grows `openAt` by the refusal in §3.3 and grows the runner.
   of being discovered by the third.
 - Cost accepted: a wedge per edge ring and per canvas ring on every derived
   graph, and grouping on a canvas ring that is full.
-- Cost accepted: one more optional field at the seam. It is plain data, it is
-  optional, and the standard's §4 already lets a host extend the context.
+- Cost accepted: one more optional field at the seam. It is plain data and it
+  is optional. The standard's §4 lets a host extend `MenuContext.type` with its
+  own values and says nothing about a new field, so this is an extension of the
+  standard rather than a use of it — which is what a proposal is for.
 - Cost accepted: two of the candidate traces will not pass on dossier until the
   second `Pends on` item is decided, and if it is decided dossier's way they
   are rewritten and the reference core changes — a vector first, then the core.
