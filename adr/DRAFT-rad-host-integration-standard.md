@@ -108,6 +108,44 @@ cells should re-address its wedges, label them, or refuse the combination. One
 implementation has no pointer and the other two have no cells, so there is no
 evidence to decide it on.
 
+### §2c A session can open entered at an item
+
+A host sometimes needs the ring to open where a step left off rather than at
+its root: one choice hands over to the next, and making the person reopen the
+ring and walk back to the same place is a step the host could have taken for
+them. So `openAt` takes an optional item to open **entered at**:
+
+```
+openAt(context, viewport, mode, { enter?: itemId })
+```
+
+Three constraints, so that entering is walking and nothing else:
+
+1. **Entering presses the item's path from the root.** `rad` resolves the menu
+   as for any open, finds the item by id, and commits each index on the path
+   to it in order, emitting the same `submenu` effects a hand would. The
+   address reached is the one a hand would have pressed; no host learns a
+   second way to name an item.
+2. **Only an item with children can be entered.** Entering a leaf would commit
+   it, which is choosing on the person's behalf; an id that names a leaf, or no
+   item, opens at the root and says so in an effect, rather than failing
+   silently or choosing.
+3. **Entering does not outlive the open.** The next open starts at the root
+   unless it asks again; `rad` keeps no memory of where a ring was entered.
+
+The ring's place on screen needs nothing new. `MenuContext.position` already
+travels with every intent (§4), and a ring that follows from an intent opens
+at that position.
+
+One host implements this today, apothecary's
+(`apothecary/static/ring.js`: `openRing({into})` and `RingInstance.enter`),
+where the browser naming several cameras after a permission prompt reopens
+the ring at Camera › Pin here. It also adds an `at` to its intents for the
+ring's place, which is what `MenuContext.position` is for; a conformant host
+carries it there instead. Candidate vectors that would pin the clause: an
+entered open's effect sequence equals a hand's for the same path; entering a
+leaf opens at the root with the refusal effect.
+
 ### §3 Coordinates are polar and relative
 
 `input()` takes events in **ring-polar** coordinates: `r` in
@@ -243,6 +281,9 @@ Named rather than decided, because one implementation cannot settle them:
 
 ## Revision triggers
 
+- **A second host enters a ring at an item, or one asks to enter at a
+  leaf** -- §2c's constraints are tested against more than one implementation,
+  and constraint 2 is reconsidered if a host has a case it cannot meet.
 - Either `v0.0.2` consumer needs something §6 lists as unsettled — that item
   gets decided rather than staying open.
 - A host writes its own renderer and `view` proves insufficient, which is the
