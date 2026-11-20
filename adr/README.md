@@ -230,6 +230,7 @@ together.
 
 Drafts in flight (numberless, by title):
 
+- A long list is grouped by facet, then by letters
 - Interaction efficiency metrics (IPA, abstraction ledger, systemization index)
 - The menu addresses nine cells
 - The ring has an authored-graph mode
