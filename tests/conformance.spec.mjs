@@ -31,6 +31,31 @@
  *
  *   the centre made placeable
  *     the centre never holds an item, at any menu size — n=5 placed an item in the centre
+ *
+ * THE SEARCH MUTATIONS, v0.0.2, quoted as they printed: each clause of
+ * adr/DRAFT-typing-in-an-open-ring-finds-an-item.md broken in the page core, and the
+ * first case that failed.
+ *
+ *   own label not first
+ *     search: own label first, then fewer keys, then the tree's order — "home" → [["home","6"],["home-all","68"],…,["view-home","42"]]
+ *   fewer keys not before the tree's order
+ *     search: own label first, then fewer keys, then the tree's order — "s" → [["fit-selected","486"],["stop","9"]]
+ *   the address's order instead of the tree's
+ *     search: every token of the query starts a token of the path — "jog y" → [["jog-y-","22"],["jog-y+","28"]]
+ *   a substring instead of a token's start
+ *     search: nothing is found by nothing, or by what no path holds — "eat" → [["heat","8"],…]
+ *   a symbol not a token of its own
+ *     search: every token of the query starts a token of the path — "y-" → [["home-y","62"],["jog-y+","28"],["jog-y-","22"]]
+ *   case kept
+ *     search: every token of the query starts a token of the path — "bed" → []
+ *   Tab never moving on
+ *     search: Tab completes … — ["b","e","d","Tab","Tab"] → text "Heat › Bed on"
+ *   digits joining a query; Space beginning one; Backspace kept with no query; a bare Shift letting a query go
+ *     search: with no query every key is the ring's … — ["8"] → text "8"; [" "] → text " "; ["Backspace"] → passed [false]; ["b","Shift","E","d"] → text "Ed"
+ *   cell 5 choosing nothing
+ *     cell 5 backs out, and at the top closes — cancelled false
+ *   a cell read as an index
+ *     a cell chooses the item placed in it, N=4 — committed null
  */
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
@@ -79,14 +104,14 @@ test('the vector set covers every suite type the runner implements', async ({ pa
   await bootPage(page);
   const kinds = new Set();
   for (const c of FILE.cases) {
-    for (const k of ['pure', 'trace', 'quant', 'tempo', 'chord', 'split', 'ceiling', 'vocab', 'aps', 'cc', 'ccdiv', 'grid']) {
+    for (const k of ['pure', 'trace', 'quant', 'tempo', 'chord', 'split', 'ceiling', 'vocab', 'aps', 'cc', 'ccdiv', 'grid', 'search']) {
       if (c[k]) kinds.add(k);
     }
   }
   // Every branch of runConformanceWith must be reachable from the file, or the
   // runner has grown a limb the contract does not exercise.
   expect([...kinds].sort()).toEqual(
-    ['aps', 'cc', 'ccdiv', 'ceiling', 'chord', 'grid', 'pure', 'quant', 'split', 'tempo', 'trace', 'vocab']);
+    ['aps', 'cc', 'ccdiv', 'ceiling', 'chord', 'grid', 'pure', 'quant', 'search', 'split', 'tempo', 'trace', 'vocab']);
 });
 
 test('the shipped chord vocabulary is prefix-free', async ({ page }) => {

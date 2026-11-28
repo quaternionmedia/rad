@@ -233,6 +233,7 @@ Drafts in flight (numberless, by title):
 - Interaction efficiency metrics (IPA, abstraction ledger, systemization index)
 - The menu addresses nine cells
 - The ring has an authored-graph mode
+- Typing in an open ring finds an item by the keys that reach it
 - Tempo-driven interaction speed
 - Unified artifact pipeline (tests = docs = README = media)
 - rad adoption and scope

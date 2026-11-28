@@ -168,3 +168,115 @@ test('edge verbs behave, and the edge ring stays within the ceiling', async ({ p
   expect(new Set(r.labels).size, 'edit-label must cycle through distinct labels').toBeGreaterThan(1);
   expect(r.removed, 'delete did not remove the edge').toBe(true);
 });
+
+/* adr/DRAFT-typing-in-an-open-ring-finds-an-item.md, in the page: letters typed in an
+ * open ring are a query, its results show their keys, and Enter presses them. The
+ * search itself is held by the `search` cases in conformance/vectors.json; this holds
+ * the page to it -- what is drawn, what is pressed, and what is said after. */
+test('typing in an open ring finds an item, shows its keys, and Enter presses them', async ({ page }) => {
+  await page.evaluate(() => store.selection.clear());
+  await page.keyboard.press('m');                       // nothing selected: the canvas menu
+  await page.keyboard.type('fi');
+  await expect(page.locator('#menu-layer .rm-query')).toHaveText('⌕ fi');
+  await expect(page.locator('#menu-layer .rm-result').first()).toHaveText('Fit  m 6');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => store.intents.length > 0);
+  const it = await page.evaluate(() => store.intents[store.intents.length - 1]);
+  expect(it.action).toBe('fit');
+  expect(it.via, 'a choice made by searching says so').toBe('search');
+  expect(it.keys).toBe('m 6');
+  await expect(page.locator('#sr-live')).toHaveText('Fit: next time, m 6');
+  await expect(page.locator('#log .intent').first()).toContainText('⌕ next time m 6');
+});
+
+test('a digit in an open ring is its cell, and lets a query go', async ({ page }) => {
+  await page.evaluate(() => store.selection.clear());
+  await page.keyboard.press('m');
+  await page.keyboard.type('lay');                      // Layout is the query's top result
+  await page.keyboard.press('6');                       // ...and 6 is Fit's cell all the same
+  await page.waitForFunction(() => store.intents.length > 0);
+  const it = await page.evaluate(() => store.intents[store.intents.length - 1]);
+  expect(it.action).toBe('fit');
+  expect(it.via ?? null, 'pressed, not searched').toBe(null);
+});
+
+test('Tab completes the query to each result in turn, inside the focus trap', async ({ page }) => {
+  await page.evaluate(() => {
+    const n = store.nodes.get('qm');
+    openMenu({ type: 'node', targetIds: ['qm'], position: { x: n.x, y: n.y } }, 200, 400, 'idle');
+  });
+  const before = await page.evaluate(() => document.activeElement?.tagName + '#' + (document.activeElement?.id || ''));
+  await page.keyboard.type('c');                        // Color, then calm, then Color's other children
+  await page.keyboard.press('Tab');
+  const first = await page.locator('#menu-layer .rm-query').textContent();
+  await page.keyboard.press('Tab');
+  const second = await page.locator('#menu-layer .rm-query').textContent();
+  const after = await page.evaluate(() => document.activeElement?.tagName + '#' + (document.activeElement?.id || ''));
+  const want = await page.evaluate(() => searchMenu(menu.active.machine.stack[0], 'c').map((r) => '⌕ ' + r.path));
+  expect(want.length, 'the node menu has more than one item starting with c').toBeGreaterThan(1);
+  expect([first, second]).toEqual(want.slice(0, 2));
+  expect(after, 'Tab completed the query and focus stayed in the menu').toBe(before);
+});
+
+const openOnQm = (page) => page.evaluate(() => {
+  const n = store.nodes.get('qm');
+  openMenu({ type: 'node', targetIds: ['qm'], position: { x: n.x, y: n.y } }, 200, 400, 'idle');
+});
+const wedgeLabels = (page) => page.evaluate(() =>
+  [...document.querySelectorAll('#menu-layer [role="menuitem"]')].map((w) => w.getAttribute('aria-label')));
+
+test('Enter on a result with children enters it, leaves the menu open there, and says its keys', async ({ page }) => {
+  await openOnQm(page);
+  await page.keyboard.type('col');
+  await expect(page.locator('#menu-layer .rm-result').first()).toHaveText('Color  2');
+  await page.keyboard.press('Enter');
+  const r = await page.evaluate(() => ({ depth: menu.active.machine.stack.length, title: menu.active.machine.stack[1].title }));
+  expect(r).toEqual({ depth: 2, title: 'Color' });
+  await expect(page.locator('#menu-layer .rm-query')).toHaveCount(0);
+  await expect(page.locator('#sr-live')).toHaveText('Color: next time, 2');
+});
+
+test('Backspace and Space edit a query, and Escape lets it go before it closes the menu', async ({ page }) => {
+  await openOnQm(page);
+  await page.keyboard.type('nei');
+  await page.keyboard.press('Backspace');
+  await expect(page.locator('#menu-layer .rm-query')).toHaveText('⌕ ne');
+  await page.keyboard.press('Space');
+  await page.keyboard.type('x');
+  await expect(page.locator('#menu-layer .rm-query')).toHaveText('⌕ ne x');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#menu-layer .rm-query')).toHaveCount(0);
+  expect(await page.evaluate(() => !!menu.active)).toBe(true);
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(() => !!menu.active)).toBe(false);
+});
+
+test('a search seats nothing: the wedges read the same with a query up', async ({ page }) => {
+  await openOnQm(page);
+  const before = await wedgeLabels(page);
+  await page.keyboard.type('c');
+  expect(await page.locator('#menu-layer .rm-result').count()).toBeGreaterThan(0);
+  expect(await wedgeLabels(page)).toEqual(before);
+});
+
+test('a greyed result pressed by Enter is pressed as its cell is: nothing chosen', async ({ page }) => {
+  await page.evaluate(() => store.selection.clear());
+  const intents = await page.evaluate(() => store.intents.length);
+  await page.keyboard.press('m');                        // the canvas menu, Unhide greyed: nothing hidden
+  await page.keyboard.type('unh');
+  await expect(page.locator('#menu-layer .rm-result.disabled')).toHaveText('Unhide  m 4');
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => store.intents.length)).toBe(intents);
+});
+
+test('Tab past the fourth result lights the one it is on, in the four written', async ({ page }) => {
+  await openOnQm(page);
+  await page.keyboard.type('c');
+  const all = await page.evaluate(() => searchMenu(menu.active.machine.stack[0], 'c').map((r) => r.path));
+  expect(all.length, 'the node menu has more than four results for c').toBeGreaterThan(4);
+  for (let i = 0; i < all.length; i++) {
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#menu-layer .rm-query')).toHaveText('⌕ ' + all[i]);
+    await expect(page.locator('#menu-layer .rm-result.hl')).toHaveText(new RegExp('^' + all[i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '  '));
+  }
+});
